@@ -9,7 +9,6 @@ import { ChatzingLocationBanner } from "@/components/chatzing/ChatzingLocationBa
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { useAuth } from "@/lib/api/AuthContext";
 import {
-  blobToBase64,
   chatzingChat,
   chatzingPreload,
   chatzingTranscribe,
@@ -18,11 +17,12 @@ import {
 } from "@/lib/chatzing/api";
 import {
   analyzeImageForChat,
+  buildImageChatAttachmentPrompt,
   buildImageEnrichedChatPrompt,
-  dataUrlToBlob,
   formatVisionOnlyAssistantReply,
   isGenericCapabilitiesReply,
 } from "@/lib/chatzing/imageAnalysis";
+import { prepareImageForChatzing } from "@/lib/chatzing/compressImage";
 import {
   buildAgentContextFromSession,
   isLocationAffirmation,
@@ -71,6 +71,15 @@ export default function ChatZingPage() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  /** Keep attachment question in sync while user types below the preview. */
+  useEffect(() => {
+    if (pendingAttachment?.type !== "image") return;
+    const q = inputValue.trim();
+    setPendingAttachment((prev) =>
+      prev?.type === "image" ? { ...prev, question: q } : prev
+    );
+  }, [inputValue, pendingAttachment?.type]);
 
   const howItWorksTitle = isFr ? "Comment fonctionne ChatZing" : "How ChatZing works";
   const howItWorksBody = isFr
@@ -303,14 +312,16 @@ export default function ChatZingPage() {
     if (!file || !file.type.startsWith("image/")) return;
 
     try {
-      const data = await blobToBase64(file);
-      pendingImageFileRef.current = file;
-      setImagePreview(data);
+      const prepared = await prepareImageForChatzing(file);
+      pendingImageFileRef.current = prepared.file;
+      setImagePreview(prepared.dataUrl);
+      const existingQuestion = inputValue.trim();
       setPendingAttachment({
         type: "image",
-        data,
-        question: inputValue.trim() || (isFr ? "Décris cette image." : "Describe this image."),
+        data: prepared.dataUrl,
+        question: existingQuestion,
       });
+      setTimeout(() => inputRef.current?.focus(), 0);
     } catch {
       setErrorBanner(isFr ? "Impossible de lire l'image." : "Could not read the image.");
     }
@@ -335,27 +346,37 @@ export default function ChatZingPage() {
     setErrorBanner(null);
     setIsTyping(true);
 
-    const userLabel = isFr ? `[Photo] ${question}` : `[Photo] ${question}`;
+    const userLabel =
+      question.trim() ||
+      (isFr ? "Photo envoyée — analyse cette image." : "Photo sent — analyze this image.");
+
+    const attachment = { ...pendingAttachment, question };
+    const file = pendingImageFileRef.current;
 
     try {
-      const file =
-        pendingImageFileRef.current ?? dataUrlToBlob(pendingAttachment.data);
-
       const analysis = await analyzeImageForChat({
-        file,
-        imageBase64: pendingAttachment.data,
+        file: file ?? null,
+        imageBase64: attachment.data,
         question,
         locale,
       });
 
-      const enrichedPrompt = buildImageEnrichedChatPrompt(analysis, question, locale);
+      if (analysis) {
+        const enrichedPrompt = buildImageEnrichedChatPrompt(analysis, question, locale);
+        await sendToChatZing(enrichedPrompt, attachment, undefined, {
+          userDisplayContent: userLabel,
+          visionAnalysis: analysis,
+        });
+        return;
+      }
 
-      await sendToChatZing(enrichedPrompt, pendingAttachment, undefined, {
+      // Vision/read_image unavailable on server — send image via chat attachments
+      const chatPrompt = buildImageChatAttachmentPrompt(question, locale);
+      await sendToChatZing(chatPrompt, attachment, undefined, {
         userDisplayContent: userLabel,
-        visionAnalysis: analysis,
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Image analysis failed";
+      const msg = e instanceof Error ? e.message : "Image send failed";
       setErrorBanner(msg);
       setMessages((prev) => [
         ...prev,
@@ -370,8 +391,8 @@ export default function ChatZingPage() {
           id: `assistant-img-err-${Date.now()}`,
           role: "assistant",
           content: isFr
-            ? `Impossible d'analyser l'image: ${msg}. Réessayez ou utilisez une autre photo.`
-            : `Could not analyze the image: ${msg}. Try again or use another photo.`,
+            ? `Impossible d'envoyer l'image: ${msg}. Réessayez avec une photo plus petite (JPG/PNG).`
+            : `Could not send the image: ${msg}. Try again with a smaller JPG/PNG photo.`,
           timestamp: new Date(),
         },
       ]);
@@ -743,33 +764,35 @@ export default function ChatZingPage() {
           className="mb-3"
         />
         {imagePreview && (
-          <div className="mb-3 flex items-start gap-2 rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-darkBlue-203/30">
-            <img src={imagePreview} alt="" className="h-16 w-16 rounded-lg object-cover" />
+          <div className="mb-3 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-darkBlue-203/30">
+            <img
+              src={imagePreview}
+              alt=""
+              className="h-16 w-16 flex-shrink-0 rounded-lg object-cover"
+            />
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
-                {isFr
-                  ? "Image prête — ajoutez une question ou envoyez"
-                  : "Image ready — add a question or send"}
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-100 mb-0.5">
+                {isFr ? "Photo jointe" : "Photo attached"}
               </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={sendImageMessage}
-                  disabled={isTyping}
-                  className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50"
-                >
-                  {isFr ? "Analyser" : "Analyze"}
-                </button>
-                <button
-                  type="button"
-                  onClick={clearImageAttachment}
-                  className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs dark:border-gray-500"
-                  aria-label={isFr ? "Retirer" : "Remove"}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                {isFr
+                  ? "Écrivez votre question ci-dessous, puis appuyez sur Envoyer (➤)."
+                  : "Type your question below, then press Send (➤)."}
+              </p>
+              {inputValue.trim() ? (
+                <p className="mt-2 text-xs text-gray-700 dark:text-gray-200 italic line-clamp-2">
+                  « {inputValue.trim()} »
+                </p>
+              ) : null}
             </div>
+            <button
+              type="button"
+              onClick={clearImageAttachment}
+              className="flex-shrink-0 rounded-lg border border-gray-300 p-2 text-gray-600 hover:bg-gray-100 dark:border-gray-500 dark:text-gray-300 dark:hover:bg-darkBlue-203"
+              aria-label={isFr ? "Retirer la photo" : "Remove photo"}
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         )}
         <div className="flex items-center gap-3">
@@ -780,9 +803,13 @@ export default function ChatZingPage() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder={
-              isFr
-                ? "Titre court, offre détaillée, ou question…"
-                : "Short title, detailed offer, or question…"
+              imagePreview
+                ? isFr
+                  ? "Votre question sur cette photo…"
+                  : "Your question about this photo…"
+                : isFr
+                  ? "Titre court, offre détaillée, ou question…"
+                  : "Short title, detailed offer, or question…"
             }
             className="flex-1 rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-900 placeholder:text-gray-500 focus:!border-transparent focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-gray-300 dark:bg-white dark:text-gray-900 dark:placeholder:text-gray-500"
             disabled={isTyping || !user}
@@ -790,7 +817,18 @@ export default function ChatZingPage() {
           <button
             type="button"
             onClick={handleSend}
-            disabled={(!inputValue.trim() && !pendingAttachment) || isTyping || !user}
+            disabled={
+              (!inputValue.trim() && !pendingAttachment) ||
+              isTyping ||
+              !user
+            }
+            title={
+              imagePreview
+                ? isFr
+                  ? "Envoyer la photo avec votre question"
+                  : "Send photo with your question"
+                : undefined
+            }
             className="w-12 h-12 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-colors shadow-sm"
             aria-label="Send message"
           >

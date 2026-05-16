@@ -153,7 +153,52 @@ export function normalizeImageBase64ForApi(data: string): string {
   return t;
 }
 
-/** Agent tool: read_image (base64). */
+function pickString(obj: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const v = obj[key];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return "";
+}
+
+function parseReadImageResult(result: Record<string, unknown>): {
+  caption: string;
+  answer: string;
+  engine?: string;
+} {
+  const nested =
+    result.result && typeof result.result === "object"
+      ? (result.result as Record<string, unknown>)
+      : result.data && typeof result.data === "object"
+        ? (result.data as Record<string, unknown>)
+        : null;
+
+  const sources = nested ? [result, nested] : [result];
+
+  let caption = "";
+  let answer = "";
+  let engine: string | undefined;
+
+  for (const src of sources) {
+    caption ||= pickString(src, ["caption", "title", "summary"]);
+    answer ||= pickString(src, [
+      "answer",
+      "text",
+      "description",
+      "message",
+      "content",
+      "output",
+      "analysis",
+    ]);
+    engine ||= pickString(src, ["engine"]) || undefined;
+  }
+
+  if (!answer && caption) answer = caption;
+
+  return { caption, answer, engine };
+}
+
+/** Agent tool: read_image (base64). Tries raw base64 then full data URL. */
 export async function chatzingReadImage(params: {
   imageBase64: string;
   question?: string;
@@ -163,50 +208,73 @@ export async function chatzingReadImage(params: {
   text?: string;
   engine?: string;
 }> {
-  const res = await fetch(resolveChatzingRequestUrl("/v1/tools/invoke"), {
-    method: "POST",
-    headers: {
-      ...authHeaders(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      name: "read_image",
-      arguments: {
-        image_base64: normalizeImageBase64ForApi(params.imageBase64),
-        question: params.question?.trim() || undefined,
-      },
-    }),
-  });
-  const data = await parseJson<{
-    ok?: boolean;
-    result?: Record<string, unknown>;
-    detail?: unknown;
-  }>(res);
-  if (!res.ok) {
-    throw new Error(errorMessage(res, data));
+  const question = params.question?.trim() || undefined;
+  const raw = normalizeImageBase64ForApi(params.imageBase64);
+  const withPrefix = params.imageBase64.trim().startsWith("data:")
+    ? params.imageBase64.trim()
+    : `data:image/jpeg;base64,${raw}`;
+
+  const payloads = [raw, withPrefix];
+  const errors: string[] = [];
+
+  for (const image_base64 of payloads) {
+    try {
+      const res = await fetch(resolveChatzingRequestUrl("/v1/tools/invoke"), {
+        method: "POST",
+        headers: {
+          ...authHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "read_image",
+          arguments: { image_base64, question },
+        }),
+      });
+      const data = await parseJson<{
+        ok?: boolean;
+        result?: Record<string, unknown>;
+        detail?: unknown;
+      }>(res);
+
+      if (!res.ok) {
+        errors.push(errorMessage(res, data));
+        continue;
+      }
+
+      if (data?.ok === false) {
+        const r = data.result;
+        const err =
+          r && typeof r === "object"
+            ? pickString(r as Record<string, unknown>, ["error", "message", "detail"])
+            : "";
+        errors.push(err || "read_image tool returned ok:false");
+        continue;
+      }
+
+      const result = data?.result;
+      if (!result || typeof result !== "object") {
+        errors.push("read_image returned no result object");
+        continue;
+      }
+
+      const parsed = parseReadImageResult(result);
+      if (!parsed.answer && !parsed.caption) {
+        errors.push("read_image returned empty analysis");
+        continue;
+      }
+
+      return {
+        caption: parsed.caption,
+        answer: parsed.answer,
+        text: parsed.answer,
+        engine: parsed.engine ?? "read_image",
+      };
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "read_image request failed");
+    }
   }
-  const result = data?.result;
-  if (!result || typeof result !== "object") {
-    throw new Error("read_image returned no result.");
-  }
-  const caption = typeof result.caption === "string" ? result.caption : "";
-  const answer =
-    typeof result.answer === "string"
-      ? result.answer
-      : typeof result.text === "string"
-        ? result.text
-        : typeof result.description === "string"
-          ? result.description
-          : "";
-  if (!caption && !answer) {
-    throw new Error("read_image returned empty analysis.");
-  }
-  return {
-    caption,
-    answer,
-    text: answer,
-    engine: typeof result.engine === "string" ? result.engine : "read_image",
-  };
+
+  throw new Error(errors[errors.length - 1] || "read_image failed");
 }
 
 export async function chatzingGeneratePoster(

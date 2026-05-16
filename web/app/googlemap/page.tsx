@@ -383,7 +383,7 @@ export default function GoogleMapPage() {
         });
       },
       () => {},
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
   }, []);
 
@@ -415,7 +415,7 @@ export default function GoogleMapPage() {
           "Unable to read your location. Allow location access and try again."
         );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
   }, [locateFromUrl]);
 
@@ -566,7 +566,7 @@ export default function GoogleMapPage() {
           "Unable to read your location. Allow location access and try again."
         );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
   }, []);
 

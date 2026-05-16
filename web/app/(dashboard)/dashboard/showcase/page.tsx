@@ -8,7 +8,8 @@ import { taskzingGoogleMapsLoaderConfig } from "@/lib/map/googleMapsLoader";
 import { FlutterMapControls } from "@/components/map/FlutterMapControls";
 import { GoogleMapPanTo } from "@/components/map/GoogleMapPanTo";
 import { LocationPickerFooter } from "@/components/map/LocationPickerFooter";
-import { getPreciseUserLocation } from "@/lib/map/getPreciseUserLocation";
+import { getUserLocation } from "@/lib/map/getPreciseUserLocation";
+import { reverseGeocodeLatLng } from "@/lib/map/reverseGeocode";
 import {
   cycleFlutterMapStyle,
   googleMapOptionsForStyle,
@@ -560,67 +561,6 @@ export default function ShowcasePage() {
     setErrors({ ...errors, images: undefined });
   };
 
-  // Reverse geocoding function to convert coordinates to address
-  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-    try {
-      // Using Nominatim (OpenStreetMap) for reverse geocoding - free and no API key required
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'Taskzing-Website/1.0' // Required by Nominatim
-          }
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch address');
-      }
-
-      const data = await response.json();
-      
-      if (data && data.address) {
-        const address = data.address;
-        // Build a readable address string
-        const addressParts = [];
-        
-        if (address.house_number && address.road) {
-          addressParts.push(`${address.house_number} ${address.road}`);
-        } else if (address.road) {
-          addressParts.push(address.road);
-        }
-        
-        if (address.suburb || address.neighbourhood) {
-          addressParts.push(address.suburb || address.neighbourhood);
-        }
-        
-        if (address.city || address.town || address.village) {
-          addressParts.push(address.city || address.town || address.village);
-        }
-        
-        if (address.state || address.region) {
-          addressParts.push(address.state || address.region);
-        }
-        
-        if (address.country) {
-          addressParts.push(address.country);
-        }
-        
-        if (address.postcode) {
-          addressParts.push(address.postcode);
-        }
-
-        return addressParts.length > 0 ? addressParts.join(', ') : data.display_name || 'Location found';
-      }
-      
-      return data.display_name || 'Location found';
-    } catch (error) {
-      console.error('Reverse geocoding error:', error);
-      // Fallback: return coordinates if geocoding fails
-      return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    }
-  };
-
   const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
       const response = await fetch(
@@ -646,7 +586,7 @@ export default function ShowcasePage() {
   const resolveMapPointAddress = useCallback(async (point: { lat: number; lng: number }) => {
     setIsResolvingMapAddress(true);
     try {
-      const address = await reverseGeocode(point.lat, point.lng);
+      const address = await reverseGeocodeLatLng(point.lat, point.lng);
       setSelectedMapAddress(address);
       return address;
     } finally {
@@ -687,40 +627,42 @@ export default function ShowcasePage() {
     if (isLocatingOnMap) return;
     setIsLocatingOnMap(true);
     try {
-      const point = await getPreciseUserLocation();
+      const point = await getUserLocation({ mode: "fast" });
       trySelectMapPoint(point);
     } catch {
       window.alert(
-        "Unable to read your precise location. Allow location access in your browser and try again."
+        "Unable to read your location. Allow location access in your browser and try again."
       );
     } finally {
       setIsLocatingOnMap(false);
     }
   };
 
-  const openLocationPicker = async () => {
+  const openLocationPicker = () => {
     setIsLocationPickerOpen(true);
-    setIsFetchingLocation(true);
     setErrors((prev) => ({ ...prev, location: undefined }));
     setShowOutOfRangeModal(false);
     setShowUpdateCenterModal(false);
-    try {
-      const center = profileLocationCenter ?? DEFAULT_LOCATION_CENTER;
-      let point = center;
+
+    const center = profileLocationCenter ?? DEFAULT_LOCATION_CENTER;
+    const initial = selectedMapPoint ?? center;
+    trySelectMapPoint(initial);
+
+    setIsFetchingLocation(true);
+    void (async () => {
       try {
-        const gps = await getPreciseUserLocation({ timeout: 15000 });
+        const gps = await getUserLocation({ mode: "balanced", timeout: 8000 });
         if (isWithinShowcaseRadius(center, gps)) {
-          point = gps;
+          trySelectMapPoint(gps);
         } else {
           setShowOutOfRangeModal(true);
         }
       } catch {
-        // Fall back to profile center when GPS is denied or unavailable.
+        // Keep profile/default center when GPS is denied or slow.
+      } finally {
+        setIsFetchingLocation(false);
       }
-      trySelectMapPoint(point);
-    } finally {
-      setIsFetchingLocation(false);
-    }
+    })();
   };
 
   const handleUsePickedLocation = async () => {

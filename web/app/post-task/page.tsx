@@ -8,7 +8,8 @@ import { taskzingGoogleMapsLoaderConfig } from "@/lib/map/googleMapsLoader";
 import { FlutterMapControls } from "@/components/map/FlutterMapControls";
 import { GoogleMapPanTo } from "@/components/map/GoogleMapPanTo";
 import { LocationPickerFooter } from "@/components/map/LocationPickerFooter";
-import { getPreciseUserLocation } from "@/lib/map/getPreciseUserLocation";
+import { getUserLocation } from "@/lib/map/getPreciseUserLocation";
+import { reverseGeocodeLatLng } from "@/lib/map/reverseGeocode";
 import {
   cycleFlutterMapStyle,
   googleMapOptionsForStyle,
@@ -866,28 +867,10 @@ export default function PostTaskPage() {
     }
   };
 
-  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
-      );
-      if (!response.ok) throw new Error("Failed to fetch address");
-      const data = await response.json();
-      return (
-        data?.display_name ||
-        `${data?.address?.road || ""} ${data?.address?.house_number || ""}, ${data?.address?.city || data?.address?.town || data?.address?.village || ""}, ${data?.address?.state || ""} ${data?.address?.postcode || ""}`.trim() ||
-        `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-      );
-    } catch (error) {
-      console.error("Reverse geocoding failed:", error);
-      return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    }
-  };
-
   const resolveMapPointAddress = async (point: { lat: number; lng: number }) => {
     setIsResolvingMapAddress(true);
     try {
-      const address = await reverseGeocode(point.lat, point.lng);
+      const address = await reverseGeocodeLatLng(point.lat, point.lng);
       setSelectedMapAddress(address);
       return address;
     } finally {
@@ -909,12 +892,12 @@ export default function PostTaskPage() {
     if (isLocatingOnMap) return;
     setIsLocatingOnMap(true);
     try {
-      const point = await getPreciseUserLocation();
+      const point = await getUserLocation({ mode: "fast" });
       centerMapOnPoint(point);
-      await resolveMapPointAddress(point);
+      void resolveMapPointAddress(point);
     } catch {
       window.alert(
-        "Unable to read your precise location. Allow location access in your browser and try again."
+        "Unable to read your location. Allow location access in your browser and try again."
       );
     } finally {
       setIsLocatingOnMap(false);
@@ -923,22 +906,27 @@ export default function PostTaskPage() {
 
   const openLocationPicker = () => {
     setIsLocationPickerOpen(true);
-    setIsFetchingLocation(true);
     setSelectedMapAddress(formData.location || "");
     clearError("location");
+
+    const initial = selectedMapPoint ?? DEFAULT_POST_JOB_MAP_CENTER;
+    centerMapOnPoint(initial);
+
+    setIsFetchingLocation(true);
     void (async () => {
       try {
-        let point = DEFAULT_POST_JOB_MAP_CENTER;
+        let point = initial;
         try {
-          point = await getPreciseUserLocation({ timeout: 15000 });
+          point = await getUserLocation({ mode: "balanced", timeout: 8000 });
         } catch {
-          // Fall back to default center when GPS is unavailable.
+          // Keep default center when GPS is unavailable.
         }
         centerMapOnPoint(point);
-        const address = await resolveMapPointAddress(point);
-        if (!formData.location.trim()) {
-          setSelectedMapAddress(address);
-        }
+        void resolveMapPointAddress(point).then((address) => {
+          if (!formData.location.trim()) {
+            setSelectedMapAddress(address);
+          }
+        });
       } finally {
         setIsFetchingLocation(false);
       }

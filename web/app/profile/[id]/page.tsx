@@ -31,6 +31,7 @@ import {
   isProviderRole,
   type ProfileJobFilter,
   type ProfileTabId,
+  resolveProfileFollowUserId,
 } from "@/lib/profile/profileHelpers";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
@@ -87,7 +88,15 @@ export default function ProfilePage() {
   const [savingShowcaseId, setSavingShowcaseId] = useState<string | null>(null);
   const [contactingShowcaseId, setContactingShowcaseId] = useState<string | null>(null);
   const userId = params?.id as string;
-  const isOwnProfile = currentUser?.uid === userId || userData?.uid === userId;
+  const followTargetUserId = useMemo(
+    () => resolveProfileFollowUserId(profileUser, userId),
+    [profileUser, userId],
+  );
+  const isOwnProfile =
+    currentUser?.uid === followTargetUserId ||
+    userData?.uid === followTargetUserId ||
+    currentUser?.uid === userId ||
+    userData?.uid === userId;
 
   const viewerRole = useMemo(
     () => String(userData?.currentRole || userData?.role || "client").toLowerCase(),
@@ -140,7 +149,6 @@ export default function ProfilePage() {
         const userShowcases = await getUserShowcases(userId);
         setShowcases(userShowcases);
 
-        void loadFollowStats(userId);
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -227,9 +235,9 @@ export default function ProfilePage() {
 
 
   useEffect(() => {
-    if (!userId) return;
-    void loadFollowStats(userId);
-  }, [userId, loadFollowStats]);
+    if (!followTargetUserId || authLoading || !currentUser) return;
+    void loadFollowStats(followTargetUserId);
+  }, [followTargetUserId, currentUser, authLoading, loadFollowStats]);
 
   const handleChat = async () => {
     if (!currentUser || !profileUser) {
@@ -251,9 +259,16 @@ export default function ProfilePage() {
     router.push(`/follower-manage?tab=${tab}&userId=${encodeURIComponent(userId)}`);
   };
 
-  const handleFollowChange = (next: { isFollowing: boolean; followersDelta: number }) => {
-    setIsFollowing(next.isFollowing);
-    setFollowersCount((c) => Math.max(0, c + next.followersDelta));
+  const handleFollowChange = (status: {
+    isFollowing: boolean;
+    isFollowedBy: boolean;
+    followersCount: number;
+    followingCount: number;
+  }) => {
+    setIsFollowing(status.isFollowing);
+    setIsFollowedBy(status.isFollowedBy);
+    setFollowersCount(status.followersCount);
+    setFollowingCount(status.followingCount);
   };
 
 
@@ -497,7 +512,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                         <ProfileFollowButton
-                          userId={profileUser?.uid || userId}
+                          userId={followTargetUserId}
                           displayName={profileDisplayName}
                           isFollowing={isFollowing}
                           isFollowedBy={isFollowedBy}
@@ -628,7 +643,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
                         <ProfileFollowButton
-                          userId={profileUser?.uid || userId}
+                          userId={followTargetUserId}
                           displayName={profileDisplayName}
                           isFollowing={isFollowing}
                           isFollowedBy={isFollowedBy}

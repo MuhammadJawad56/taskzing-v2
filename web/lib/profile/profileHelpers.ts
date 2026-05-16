@@ -66,3 +66,13 @@ export function getProfileInitial(name: string): string {
   const first = trimmed.replace(/^@/, "").charAt(0);
   return first ? first.toUpperCase() : "?";
 }
+
+/** Same user id for follow-status and follow/unfollow (API canonical id, not route alias). */
+export function resolveProfileFollowUserId(
+  profileUser: Pick<User, "id" | "uid"> | null,
+  routeUserId: string,
+): string {
+  const canonical = (profileUser?.id || profileUser?.uid || "").trim();
+  const route = routeUserId.trim();
+  return canonical || route;
+}

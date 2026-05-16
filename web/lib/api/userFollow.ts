@@ -110,10 +110,17 @@ function followFailureMessage(res: {
         ? raw.error
         : "";
   const combined = `${res.message} ${extra}`.trim();
-  if (combined && !combined.startsWith("Request failed")) return combined;
   if (res.status === 401) return "Please sign in again to follow profiles.";
+  if (
+    res.status === 403 &&
+    (String(raw.code ?? "").includes("EMAIL_NOT_VERIFIED") ||
+      combined.toLowerCase().includes("verify"))
+  ) {
+    return "Please verify your email before following profiles.";
+  }
   if (res.status === 403) return "You cannot follow this profile.";
   if (res.status === 404) return "This profile could not be found.";
+  if (combined && !combined.startsWith("Request failed")) return combined;
   return combined || "Follow request failed.";
 }
 

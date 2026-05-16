@@ -38,32 +38,33 @@ export const CHATZING_QUICK_ACTIONS: ChatzingQuickAction[] = [
   { id: "help", icon: HelpCircle, usesChat: true },
 ];
 
+/** Natural-language prompts sent to the API (no internal tool names). */
 const PROMPTS = {
   en: {
     poster:
-      "I want a marketing poster for my TaskZing service. If I only give a short title, expand it into subtitle and copy, then call generate_poster (modern template).",
+      "I want a marketing poster for my TaskZing service. If I only give a short title, expand it into subtitle and copy, then create a modern poster for me.",
     nearby_jobs:
-      "After my location is confirmed in context, use list_nearby_jobs to show open jobs near me with titles, categories, and distance.",
+      "Show me open jobs near my current location with titles, categories, and distance.",
     nearby_showcases:
-      "After my location is confirmed in context, use list_nearby_showcases to show provider showcases near me.",
+      "Show me provider showcases near my current location.",
     local_demand:
-      "Ask what service or product I offer. After my location is confirmed in context, use suggest_local_niches to explain local demand and competition.",
+      "Ask what service or product I offer, then explain local demand and competition near my location.",
     post_job:
-      "Help me post a new job on TaskZing. If I only give a title or short phrase, auto-write a full professional description for me to review. Then collect budget, address, date, skills, validate_job_draft, and create_job when I confirm.",
+      "Help me post a new job on TaskZing. If I only give a title or short phrase, draft a full professional description for me to review, then help with budget, address, date, and skills before posting.",
     help:
       "Summarize what ChatZing can do on TaskZing: help, jobs, showcases, posters, voice, images, and local insights.",
   },
   fr: {
     poster:
-      "Je veux une affiche pour mon service TaskZing. Si je donne seulement un titre court, développez sous-titre et texte puis appelez generate_poster (modèle modern).",
+      "Je veux une affiche pour mon service TaskZing. Si je donne seulement un titre court, développez sous-titre et texte puis créez une affiche moderne.",
     nearby_jobs:
-      "Une fois ma position confirmée dans le contexte, utilisez list_nearby_jobs pour les emplois ouverts près de moi.",
+      "Montrez-moi les emplois ouverts près de ma position avec titres, catégories et distance.",
     nearby_showcases:
-      "Une fois ma position confirmée dans le contexte, utilisez list_nearby_showcases pour les vitrines près de moi.",
+      "Montrez-moi les vitrines de prestataires près de ma position.",
     local_demand:
-      "Demandez ce que j'offre. Une fois ma position confirmée, utilisez suggest_local_niches pour la demande locale.",
+      "Demandez ce que j'offre, puis expliquez la demande locale et la concurrence près de chez moi.",
     post_job:
-      "Aidez-moi à publier un emploi sur TaskZing. Si je ne donne qu'un titre ou une phrase courte, rédigez une description complète pour validation. Puis budget, adresse, date, validate_job_draft et create_job après confirmation.",
+      "Aidez-moi à publier un emploi sur TaskZing. Si je ne donne qu'un titre ou une phrase courte, rédigez une description complète pour validation, puis budget, adresse, date et compétences avant publication.",
     help:
       "Résumez ce que ChatZing peut faire sur TaskZing : aide, emplois, vitrines, affiches, voix, images et insights locaux.",
   },

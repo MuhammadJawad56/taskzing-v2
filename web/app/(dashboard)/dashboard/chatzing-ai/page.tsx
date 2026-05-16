@@ -17,11 +17,15 @@ import {
 } from "@/lib/chatzing/api";
 import {
   analyzeImageForChat,
-  buildImageChatAttachmentPrompt,
-  buildImageEnrichedChatPrompt,
+  buildImageChatApiMessages,
+  buildImageUserChatContent,
+  extractReadImageFromChatResponse,
+  formatImageReplyUnavailable,
   formatVisionOnlyAssistantReply,
   isGenericCapabilitiesReply,
+  isIrrelevantImageReply,
 } from "@/lib/chatzing/imageAnalysis";
+import { sanitizeChatzingUserFacingText } from "@/lib/chatzing/sanitizeReply";
 import { prepareImageForChatzing } from "@/lib/chatzing/compressImage";
 import {
   buildAgentContextFromSession,
@@ -33,6 +37,7 @@ import {
 } from "@/lib/chatzing/agentBehavior";
 import { buildChatApiMessages } from "@/lib/chatzing/dataset";
 import {
+  getQuickActionLabel,
   getQuickActionPrompt,
   type ChatzingQuickActionId,
 } from "@/lib/chatzing/quickActions";
@@ -54,7 +59,10 @@ export default function ChatZingPage() {
   const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [locationBannerDismissed, setLocationBannerDismissed] = useState(false);
   const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "available" | "denied">("idle");
-  const [pendingLocalPrompt, setPendingLocalPrompt] = useState<string | null>(null);
+  const [pendingLocalAction, setPendingLocalAction] = useState<{
+    apiPrompt: string;
+    display: string;
+  } | null>(null);
   const [pendingAttachment, setPendingAttachment] = useState<ChatAttachment | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -162,6 +170,9 @@ export default function ChatZingPage() {
     options?: {
       userDisplayContent?: string;
       visionAnalysis?: ImageAnalysisResult;
+      /** Use vision-only system prompt (no full knowledge base). */
+      imageOnlyMode?: boolean;
+      userQuestion?: string;
     }
   ) => {
     if (!user) {
@@ -211,10 +222,18 @@ export default function ChatZingPage() {
       const prior = messagesRef.current
         .filter((m) => m.id !== "welcome-1")
         .map((m) => ({ role: m.role, content: m.content }));
-      const apiMessages = buildChatApiMessages(prior, textToSend, locale, {
-        locationConfirmed: session.locationConfirmed,
-        pendingLocation: session.pendingLocation,
-      });
+
+      const apiMessages = options?.imageOnlyMode
+        ? buildImageChatApiMessages(
+            prior,
+            textToSend,
+            locale,
+            options.userQuestion ?? options.userDisplayContent ?? textToSend
+          )
+        : buildChatApiMessages(prior, textToSend, locale, {
+            locationConfirmed: session.locationConfirmed,
+            pendingLocation: session.pendingLocation,
+          });
       const res = await chatzingChat({
         messages: apiMessages,
         context: buildAgentContextFromSession(session, attachment ?? pendingAttachment),
@@ -238,12 +257,24 @@ export default function ChatZingPage() {
           : undefined;
 
       let replyText = res.message;
-      if (
-        options?.visionAnalysis &&
-        isGenericCapabilitiesReply(replyText)
-      ) {
+      const badImageReply =
+        options?.imageOnlyMode &&
+        (isGenericCapabilitiesReply(replyText) || isIrrelevantImageReply(replyText));
+
+      const toolImage = options?.imageOnlyMode
+        ? extractReadImageFromChatResponse(res)
+        : null;
+
+      if (badImageReply && toolImage) {
         replyText = formatVisionOnlyAssistantReply(
-          options.visionAnalysis,
+          { ...toolImage, question: options.userQuestion ?? "" },
+          locale
+        );
+      } else if (badImageReply && options?.visionAnalysis) {
+        replyText = formatVisionOnlyAssistantReply(options.visionAnalysis, locale);
+      } else if (badImageReply) {
+        replyText = formatImageReplyUnavailable(
+          options.userQuestion ?? options.userDisplayContent ?? "",
           locale
         );
       }
@@ -251,7 +282,7 @@ export default function ChatZingPage() {
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: replyText,
+        content: sanitizeChatzingUserFacingText(replyText),
         timestamp: new Date(),
         images: images.length ? images : undefined,
         actions,
@@ -280,12 +311,14 @@ export default function ChatZingPage() {
   };
 
   useEffect(() => {
-    if (!locationConfirmed || !pendingLocalPrompt) return;
-    const prompt = pendingLocalPrompt;
-    setPendingLocalPrompt(null);
-    void sendToChatZing(prompt, null, { locationConfirmed: true, pendingLocation });
+    if (!locationConfirmed || !pendingLocalAction) return;
+    const action = pendingLocalAction;
+    setPendingLocalAction(null);
+    void sendToChatZing(action.apiPrompt, null, { locationConfirmed: true, pendingLocation }, {
+      userDisplayContent: action.display,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when location is confirmed for a queued local action
-  }, [locationConfirmed, pendingLocalPrompt, pendingLocation]);
+  }, [locationConfirmed, pendingLocalAction, pendingLocation]);
 
   const handleSend = async () => {
     if (isTyping) return;
@@ -361,19 +394,39 @@ export default function ChatZingPage() {
         locale,
       });
 
-      if (analysis) {
-        const enrichedPrompt = buildImageEnrichedChatPrompt(analysis, question, locale);
-        await sendToChatZing(enrichedPrompt, attachment, undefined, {
-          userDisplayContent: userLabel,
-          visionAnalysis: analysis,
-        });
+      const agentText = buildImageUserChatContent(question, locale);
+
+      if (analysis && (analysis.answer.trim() || analysis.caption?.trim())) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `user-${Date.now()}`,
+            role: "user",
+            content: userLabel,
+            timestamp: new Date(),
+            images: imagePreview ? [imagePreview] : undefined,
+          },
+          {
+            id: `assistant-${Date.now()}`,
+            role: "assistant",
+            content: sanitizeChatzingUserFacingText(
+              formatVisionOnlyAssistantReply({ ...analysis, question }, locale)
+            ),
+            timestamp: new Date(),
+          },
+        ]);
+        setIsTyping(false);
+        setPendingAttachment(null);
+        setImagePreview(null);
+        pendingImageFileRef.current = null;
         return;
       }
 
-      // Vision/read_image unavailable on server — send image via chat attachments
-      const chatPrompt = buildImageChatAttachmentPrompt(question, locale);
-      await sendToChatZing(chatPrompt, attachment, undefined, {
+      // Vision/read_image unavailable — chat with image-only prompt (no full KB)
+      await sendToChatZing(agentText, attachment, undefined, {
         userDisplayContent: userLabel,
+        imageOnlyMode: true,
+        userQuestion: question,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Image send failed";
@@ -426,9 +479,11 @@ export default function ChatZingPage() {
     const prompt = getQuickActionPrompt(id, locale);
     if (!prompt) return;
 
+    const displayLabel = getQuickActionLabel(id, locale);
+
     if (requiresLocationBeforeAction(id) && !locationConfirmed) {
       if (pendingLocation) {
-        setPendingLocalPrompt(prompt);
+        setPendingLocalAction({ apiPrompt: prompt, display: displayLabel });
         setLocationBannerDismissed(false);
         return;
       }
@@ -441,7 +496,7 @@ export default function ChatZingPage() {
       return;
     }
 
-    await sendToChatZing(prompt, null);
+    await sendToChatZing(prompt, null, undefined, { userDisplayContent: displayLabel });
   };
 
   const handleMessageAction = async (
@@ -451,7 +506,10 @@ export default function ChatZingPage() {
     if (action.type === "confirm_location") {
       confirmLocationShare();
       if (followUpPrompt) {
-        setPendingLocalPrompt(followUpPrompt);
+        const display =
+          sanitizeChatzingUserFacingText(followUpPrompt) ||
+          (isFr ? "Continuer" : "Continue");
+        setPendingLocalAction({ apiPrompt: followUpPrompt, display });
       } else {
         await sendToChatZing(
           isFr

@@ -259,8 +259,8 @@ const SYSTEM_PROMPT_MAX = 14_000;
 export function buildKnowledgeSystemPrompt(locale: "en" | "fr"): string {
   const intro =
     locale === "fr"
-      ? `Tu es ChatZing, l'assistant officiel TaskZing (version dataset ${CHATZING_DATASET_VERSION}). Réponds dans la langue de l'utilisateur. Pour les questions « comment utiliser TaskZing », utilise la base ci-dessous. Pour les données en direct (emplois, vitrines, affiches, demande locale), appelle les outils API (list_nearby_jobs, list_nearby_showcases, suggest_local_niches, create_job, generate_poster, read_image, transcribe_voice_note, taskzing_help).`
-      : `You are ChatZing, the official TaskZing assistant (dataset version ${CHATZING_DATASET_VERSION}). Reply in the user's language. For "how to use TaskZing" questions, use the knowledge base below. For live data (jobs, showcases, posters, local demand), call API tools (list_nearby_jobs, list_nearby_showcases, suggest_local_niches, create_job, generate_poster, read_image, transcribe_voice_note, taskzing_help).`;
+      ? `Tu es ChatZing, l'assistant officiel TaskZing. Réponds dans la langue de l'utilisateur. Pour « comment utiliser TaskZing », utilise la base ci-dessous. Pour emplois, vitrines, affiches et demande locale en direct, utilise les outils internes disponibles — sans jamais citer leurs noms techniques à l'utilisateur.`
+      : `You are ChatZing, the official TaskZing assistant. Reply in the user's language. For "how to use TaskZing" questions, use the knowledge base below. For live jobs, showcases, posters, and local demand, use the internal tools available — never quote their technical names to the user.`;
 
   const lines: string[] = [intro, "", "TASKZING_KNOWLEDGE_BASE:"];
   for (const entry of getAllKnowledgeEntries()) {
@@ -309,6 +309,47 @@ export function buildChatApiMessages(
       content: m.content,
     })),
     { role: "user", content: nextUserText },
+  ];
+}
+
+/**
+ * Image requests use a short vision-only system prompt (no full KB — avoids irrelevant taskzing_help answers).
+ */
+export function buildImageFocusedChatMessages(
+  history: { role: "user" | "assistant"; content: string }[],
+  agentUserText: string,
+  locale: "en" | "fr",
+  userQuestion: string
+): ApiChatMessage[] {
+  const q = userQuestion.trim();
+  const system =
+    locale === "fr"
+      ? `Tu es ChatZing, assistant TaskZing. L'utilisateur a joint une IMAGE (context.attachments).
+
+RÈGLES STRICTES:
+1) Analyse l'image jointe avant de répondre.
+2) Décris ce qui est VISIBLE: titres, boutons, menus, textes à l'écran (ex. « Nearest Jobs », « See more »).
+3) Réponds UNIQUEMENT à la question sur CETTE image.
+INTERDIT: messagerie générique, paiements, paramètres, noms d'outils API, ou listes de capacités non liées à l'image.`
+      : `You are ChatZing, the TaskZing assistant. The user attached an IMAGE.
+
+STRICT RULES:
+1) Analyze the attached image before answering.
+2) Describe what is VISIBLE: headings, buttons, menus, on-screen text (e.g. "Nearest Jobs", "See more").
+3) Answer ONLY the user's question about THIS image.
+FORBIDDEN: generic messaging, payments, settings, API tool names, or capability lists unrelated to the image.`;
+
+  const slimHistory = history
+    .filter((m) => !m.content.startsWith("[Photo") && !m.content.startsWith("[Image"))
+    .slice(-4);
+
+  return [
+    { role: "system", content: system },
+    ...slimHistory.map((m) => ({
+      role: m.role as ApiChatMessage["role"],
+      content: m.content,
+    })),
+    { role: "user", content: agentUserText },
   ];
 }
 

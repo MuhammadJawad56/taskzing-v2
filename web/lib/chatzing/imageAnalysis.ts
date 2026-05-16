@@ -1,8 +1,7 @@
-import {
-  chatzingReadImage,
-  chatzingVision,
-  type ImageAnalysisResult,
-} from "./api";
+import type { ApiChatMessage } from "./types";
+import { buildImageFocusedChatMessages } from "./dataset";
+import { chatzingReadImage, chatzingVision, type ImageAnalysisResult } from "./api";
+import type { ChatResponse, ToolCallRecord } from "./types";
 
 export type { ImageAnalysisResult } from "./api";
 
@@ -15,25 +14,46 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
+/** Clear user-facing text sent to the API (not the short label shown in UI). */
+export function buildImageUserChatContent(
+  question: string,
+  locale: "en" | "fr"
+): string {
+  const q =
+    question.trim() ||
+    (locale === "fr"
+      ? "Qu'est-ce que je vois et comment cela aide sur TaskZing ?"
+      : "What do I see and how does this help on TaskZing?");
+
+  if (locale === "fr") {
+    return [
+      "[Capture TaskZing jointe]",
+      "Décris exactement tout texte et élément d'interface visible (titres, liens, boutons, sections).",
+      `Puis réponds à ma question: ${q}`,
+    ].join(" ");
+  }
+
+  return [
+    "[TaskZing screenshot attached]",
+    "Describe exactly every visible UI element (headings, links, buttons, sections).",
+    `Then answer my question: ${q}`,
+  ].join(" ");
+}
+
+export function buildImageChatApiMessages(
+  history: { role: "user" | "assistant"; content: string }[],
+  agentUserText: string,
+  locale: "en" | "fr",
+  userQuestion: string
+): ApiChatMessage[] {
+  return buildImageFocusedChatMessages(history, agentUserText, locale, userQuestion);
+}
+
 export function buildImageChatAttachmentPrompt(
   question: string,
   locale: "en" | "fr"
 ): string {
-  const q = question.trim();
-  if (locale === "fr") {
-    return [
-      "L'utilisateur a joint une image dans context.attachments.",
-      "Tu DOIS appeler l'outil read_image (ou analyser l'attachment) avant de répondre.",
-      "Interdit: liste générique des capacités ChatZing.",
-      q ? `Question: ${q}` : "Décris l'image et comment l'utiliser sur TaskZing.",
-    ].join("\n");
-  }
-  return [
-    "The user attached an image in context.attachments.",
-    "You MUST call read_image (or process the attachment) before replying.",
-    "Forbidden: generic ChatZing capabilities list.",
-    q ? `Question: ${q}` : "Describe the image and how it helps on TaskZing.",
-  ].join("\n");
+  return buildImageUserChatContent(question, locale);
 }
 
 /** Run vision → read_image; returns null if both fail (caller uses chat attachment fallback). */
@@ -89,27 +109,60 @@ export function buildImageEnrichedChatPrompt(
   const q = userQuestion.trim() || analysis.question;
   if (locale === "fr") {
     return [
-      "L'utilisateur a joint une image. Analyse déjà effectuée (NE PAS répondre par une liste générique).",
-      `Source: ${analysis.source}`,
-      analysis.caption ? `Légende: ${analysis.caption}` : "",
-      `Analyse: ${analysis.answer}`,
+      "[Analyse vision déjà effectuée — ne pas donner de réponse générique]",
+      analysis.caption ? `Visible: ${analysis.caption}` : "",
+      `Détails: ${analysis.answer}`,
       `Question: ${q}`,
-      "Réponse personnalisée TaskZing basée sur cette image.",
+      "Réponds en te basant UNIQUEMENT sur cette analyse et la question.",
     ]
       .filter(Boolean)
       .join("\n");
   }
 
   return [
-    "The user attached an image. Analysis already complete (no generic capability list).",
-    `Source: ${analysis.source}`,
-    analysis.caption ? `Caption: ${analysis.caption}` : "",
-    `Analysis: ${analysis.answer}`,
-    `User question: ${q}`,
-    "Personalized TaskZing reply based on this image.",
+    "[Vision analysis complete — do not give a generic reply]",
+    analysis.caption ? `Visible: ${analysis.caption}` : "",
+    `Details: ${analysis.answer}`,
+    `Question: ${q}`,
+    "Reply based ONLY on this analysis and the question.",
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function parseToolReadImage(tc: ToolCallRecord): ImageAnalysisResult | null {
+  if (tc.name !== "read_image" || !tc.result || typeof tc.result !== "object") {
+    return null;
+  }
+  const r = tc.result as Record<string, unknown>;
+  const caption = typeof r.caption === "string" ? r.caption : "";
+  const answer =
+    typeof r.answer === "string"
+      ? r.answer
+      : typeof r.text === "string"
+        ? r.text
+        : typeof r.description === "string"
+          ? r.description
+          : "";
+  if (!answer && !caption) return null;
+  return {
+    source: "read_image",
+    caption,
+    answer: answer || caption,
+    engine: typeof r.engine === "string" ? r.engine : "read_image",
+    question: "",
+  };
+}
+
+/** If the agent called read_image, use that result instead of a generic message. */
+export function extractReadImageFromChatResponse(
+  res: ChatResponse
+): ImageAnalysisResult | null {
+  for (const tc of res.tool_calls ?? []) {
+    const parsed = parseToolReadImage(tc);
+    if (parsed) return parsed;
+  }
+  return null;
 }
 
 export function isGenericCapabilitiesReply(text: string): boolean {
@@ -118,8 +171,41 @@ export function isGenericCapabilitiesReply(text: string): boolean {
     (t.includes("i can help you") && t.includes("post a job")) ||
     (t.includes("je peux vous aider") && t.includes("publier")) ||
     /try:\s*['"]post a tutoring job/i.test(text) ||
-    /essayez:\s*['"]publier un emploi/i.test(text)
+    /essayez:\s*['"]publier un emploi/i.test(text) ||
+    (t.includes("in-app messaging") && t.includes("discuss")) ||
+    (t.includes("messagerie") && t.includes("discuter"))
   );
+}
+
+/** Reply ignores the image and gives unrelated TaskZing tips. */
+export function isIrrelevantImageReply(text: string): boolean {
+  if (isGenericCapabilitiesReply(text)) return true;
+
+  const t = text.toLowerCase();
+  const genericSnippets = [
+    "in-app messaging",
+    "discuss jobs with clients",
+    "payment method",
+    "dark mode",
+    "go to settings",
+    "navigate to the",
+    "from the navigation menu",
+    "stripe handles",
+    "language settings",
+    "saved items",
+    "qr code",
+  ];
+
+  const mentionsVisual =
+    /\b(screenshot|image|photo|screen|visible|shows|showing|see more|nearest|button|section|heading|capture|interface|ui|page|jobs|see more)\b/i.test(
+      text
+    );
+
+  const hitsGeneric = genericSnippets.some((s) => t.includes(s));
+  if (hitsGeneric && !mentionsVisual) return true;
+  if (hitsGeneric && t.length < 280) return true;
+
+  return false;
 }
 
 export function formatVisionOnlyAssistantReply(
@@ -128,12 +214,12 @@ export function formatVisionOnlyAssistantReply(
 ): string {
   if (locale === "fr") {
     return [
-      "Voici l'analyse de votre image :",
+      "Voici ce que je vois dans votre image :",
       "",
-      analysis.caption ? `**Aperçu:** ${analysis.caption}` : "",
+      analysis.caption ? `**À l'écran:** ${analysis.caption}` : "",
       `**Détails:** ${analysis.answer}`,
       "",
-      "_Dites-moi si vous voulez en faire un emploi, une vitrine ou une affiche sur TaskZing._",
+      "_Dites-moi si vous voulez de l'aide pour cette section sur TaskZing._",
     ]
       .filter(Boolean)
       .join("\n");
@@ -142,11 +228,35 @@ export function formatVisionOnlyAssistantReply(
   return [
     "Here's what I see in your image:",
     "",
-    analysis.caption ? `**Overview:** ${analysis.caption}` : "",
+    analysis.caption ? `**On screen:** ${analysis.caption}` : "",
     `**Details:** ${analysis.answer}`,
     "",
-    "_Tell me if you'd like to turn this into a job, showcase, or poster on TaskZing._",
+    "_Tell me if you want help with this section on TaskZing._",
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+export function formatImageReplyUnavailable(
+  userQuestion: string,
+  locale: "en" | "fr"
+): string {
+  const q = userQuestion.trim();
+  if (locale === "fr") {
+    return [
+      "Je n'ai pas pu analyser l'image sur le serveur (vision indisponible).",
+      "",
+      q
+        ? `Pour vous aider sur « ${q} », décrivez en une phrase ce que montre la capture (ex. section « Nearest Jobs », bouton « See more »).`
+        : "Décrivez en une phrase ce que montre la capture (titres, boutons visibles).",
+    ].join("\n");
+  }
+
+  return [
+    "I couldn't analyze the image on the server (vision unavailable).",
+    "",
+    q
+      ? `To help with "${q}", describe in one sentence what the screenshot shows (e.g. "Nearest Jobs" section, "See more" link).`
+      : 'Describe in one sentence what the screenshot shows (visible headings, buttons).',
+  ].join("\n");
 }

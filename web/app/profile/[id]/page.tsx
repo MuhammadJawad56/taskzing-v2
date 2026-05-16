@@ -17,8 +17,7 @@ import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileJobsFilterBar } from "@/components/profile/ProfileJobsFilterBar";
 import { ProfilePhotoLightbox } from "@/components/profile/ProfilePhotoLightbox";
 import { ProfileFollowButton } from "@/components/profile/ProfileFollowButton";
-import { ProfileMoreOptionsButton } from "@/components/profile/ProfileMoreOptionsButton";
-import { ProfileMoreOptionsSheet } from "@/components/profile/ProfileMoreOptionsSheet";
+import { ProfileQrCodeButton } from "@/components/profile/ProfileQrCodeButton";
 import {
   ProfileFollowStatsRow,
   type FollowStatTab,
@@ -36,14 +35,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import {
-  bookmarkProfile,
-  getBookmarkedProfiles,
-  getUserById,
-  getUserProfileImageUrl,
-  isProfileBookmarked,
-  unbookmarkProfile,
-} from "@/lib/api/users";
+import { getUserById, getUserProfileImageUrl } from "@/lib/api/users";
 import { getJobsByClientId } from "@/lib/api/jobs";
 import {
   bookmarkShowcase,
@@ -65,15 +57,6 @@ import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { getFollowStatusFull } from "@/lib/api/userFollow";
 import { Task } from "@/lib/types/task";
 import { User } from "@/lib/types/user";
-import {
-  PROFILE_BOOKMARK_RESTORED_EVENT,
-  PROFILE_SAVED_UNDONE_EVENT,
-  PROFILE_UNSAVED_EVENT,
-  type ProfileBookmarkRestoredDetail,
-  type ProfileSavedUndoneDetail,
-  type ProfileUnsavedDetail,
-} from "@/lib/profileBookmarkEvents";
-
 const SKILLS_PREVIEW_MOBILE = 8;
 const SKILLS_PREVIEW_DESKTOP = 6;
 
@@ -90,9 +73,6 @@ export default function ProfilePage() {
   const [jobFilter, setJobFilter] = useState<ProfileJobFilter>("all");
   const [showQRModal, setShowQRModal] = useState(false);
   const [showPhotoLightbox, setShowPhotoLightbox] = useState(false);
-  const [showMoreOptions, setShowMoreOptions] = useState(false);
-  const [isProfileSaved, setIsProfileSaved] = useState(false);
-  const [bookmarkSaving, setBookmarkSaving] = useState(false);
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
@@ -104,9 +84,6 @@ export default function ProfilePage() {
   const [reviewStats, setReviewStats] = useState<UserReviewStats | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [savedShowcaseIds, setSavedShowcaseIds] = useState<Set<string>>(new Set());
-  const [bookmarkedProfiles, setBookmarkedProfiles] = useState<User[]>([]);
-  const [loadingBookmarks, setLoadingBookmarks] = useState(false);
-  const [unsavingProfileId, setUnsavingProfileId] = useState<string | null>(null);
   const [savingShowcaseId, setSavingShowcaseId] = useState<string | null>(null);
   const [contactingShowcaseId, setContactingShowcaseId] = useState<string | null>(null);
   const userId = params?.id as string;
@@ -118,7 +95,7 @@ export default function ProfilePage() {
   );
   const viewedRole = useMemo(() => getViewedProfileRole(profileUser), [profileUser]);
   const profileTabIds = useMemo(
-    () => buildProfileTabs(viewerRole, viewedRole, { includeSaved: isOwnProfile }),
+    () => buildProfileTabs(viewerRole, viewedRole),
     [viewerRole, viewedRole, isOwnProfile],
   );
 
@@ -164,9 +141,6 @@ export default function ProfilePage() {
         setShowcases(userShowcases);
 
         void loadFollowStats(userId);
-        if (!isOwnProfile && currentUser) {
-          void checkSavedProfileStatus();
-        }
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -217,27 +191,6 @@ export default function ProfilePage() {
     };
   }, [activeTab, userId]);
 
-  useEffect(() => {
-    if (activeTab !== "saved" || !isOwnProfile || !currentUser?.uid) {
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      setLoadingBookmarks(true);
-      try {
-        const profiles = await getBookmarkedProfiles(currentUser.uid);
-        if (!cancelled) setBookmarkedProfiles(profiles);
-      } catch (e) {
-        console.error("Failed to load saved profiles:", e);
-        if (!cancelled) setBookmarkedProfiles([]);
-      } finally {
-        if (!cancelled) setLoadingBookmarks(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeTab, isOwnProfile, currentUser?.uid]);
 
   useEffect(() => {
     if (!profileUser) return;
@@ -272,15 +225,6 @@ export default function ProfilePage() {
     }
   }, []);
 
-  const checkSavedProfileStatus = useCallback(async () => {
-    if (!currentUser || !userId) return;
-    try {
-      const localSaved = await isProfileBookmarked(currentUser.uid, userId);
-      setIsProfileSaved(localSaved);
-    } catch (error) {
-      console.error("Error checking saved profile status:", error);
-    }
-  }, [currentUser?.uid, userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -312,50 +256,6 @@ export default function ProfilePage() {
     setFollowersCount((c) => Math.max(0, c + next.followersDelta));
   };
 
-  const handleToggleProfileBookmark = async () => {
-    if (!currentUser || !userId || isOwnProfile) return;
-    setBookmarkSaving(true);
-    try {
-      if (isProfileSaved) {
-        await unbookmarkProfile(currentUser.uid, userId);
-        setIsProfileSaved(false);
-      } else {
-        await bookmarkProfile(currentUser.uid, userId);
-        setIsProfileSaved(true);
-      }
-    } catch (error) {
-      console.error("Error toggling profile bookmark:", error);
-      alert(t("profile.followError"));
-    } finally {
-      setBookmarkSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    const onUnsaved = (ev: Event) => {
-      const d = (ev as CustomEvent<ProfileUnsavedDetail>).detail;
-      if (!d || currentUser?.uid !== d.bookmarkedBy) return;
-      if (d.profileUserId === userId && !isOwnProfile) setIsProfileSaved(false);
-    };
-    const onRestored = (ev: Event) => {
-      const id = (ev as CustomEvent<ProfileBookmarkRestoredDetail>).detail?.profileUserId;
-      if (!id || !currentUser) return;
-      if (id === userId && !isOwnProfile) setIsProfileSaved(true);
-    };
-    const onSavedUndone = (ev: Event) => {
-      const d = (ev as CustomEvent<ProfileSavedUndoneDetail>).detail;
-      if (!d || currentUser?.uid !== d.bookmarkedBy) return;
-      if (d.profileUserId === userId && !isOwnProfile) setIsProfileSaved(false);
-    };
-    window.addEventListener(PROFILE_UNSAVED_EVENT, onUnsaved as EventListener);
-    window.addEventListener(PROFILE_BOOKMARK_RESTORED_EVENT, onRestored as EventListener);
-    window.addEventListener(PROFILE_SAVED_UNDONE_EVENT, onSavedUndone as EventListener);
-    return () => {
-      window.removeEventListener(PROFILE_UNSAVED_EVENT, onUnsaved as EventListener);
-      window.removeEventListener(PROFILE_BOOKMARK_RESTORED_EVENT, onRestored as EventListener);
-      window.removeEventListener(PROFILE_SAVED_UNDONE_EVENT, onSavedUndone as EventListener);
-    };
-  }, [userId, currentUser, isOwnProfile]);
 
   const filteredJobs = useMemo(() => {
     switch (jobFilter) {
@@ -432,9 +332,7 @@ export default function ProfilePage() {
             ? t("profile.jobs")
             : id === "showcases"
               ? t("profile.showcases")
-              : id === "saved"
-                ? t("profile.saved")
-                : t("profile.reviews"),
+              : t("profile.reviews"),
       })),
     [profileTabIds, t],
   );
@@ -445,19 +343,6 @@ export default function ProfilePage() {
     { id: "complete", label: t("profile.completeJobs") },
   ];
 
-  const handleUnsaveFromSavedCard = async (profileUserId: string) => {
-    if (!currentUser?.uid) return;
-    setUnsavingProfileId(profileUserId);
-    try {
-      await unbookmarkProfile(currentUser.uid, profileUserId);
-      setBookmarkedProfiles((prev) => prev.filter((p) => p.uid !== profileUserId));
-    } catch (e) {
-      console.error("Failed to remove saved profile:", e);
-      alert("Could not remove saved profile. Please try again.");
-    } finally {
-      setUnsavingProfileId(null);
-    }
-  };
 
   if (!profileUser && !loading) {
     return (
@@ -589,7 +474,7 @@ export default function ProfilePage() {
                           fill="currentColor"
                         />
                       ) : null}
-                      <ProfileMoreOptionsButton compact onClick={() => setShowMoreOptions(true)} />
+                      <ProfileQrCodeButton compact onClick={() => setShowQRModal(true)} />
                       <Link href={`/edit-profile?returnTo=/profile/${userId}`} className="inline-flex shrink-0">
                         <span className={cn(flutterProfileSkillChip, "px-3 py-1.5 text-xs font-semibold")}>
                           {t("profile.edit")}
@@ -628,7 +513,7 @@ export default function ProfilePage() {
                         >
                           <MessageSquare className="h-5 w-5 text-[#FF2D2D]" strokeWidth={2.25} />
                         </button>
-                        <ProfileMoreOptionsButton compact onClick={() => setShowMoreOptions(true)} />
+                        <ProfileQrCodeButton compact onClick={() => setShowQRModal(true)} />
                       </div>
                     </div>
                   )}
@@ -724,7 +609,7 @@ export default function ProfilePage() {
                       {profileUser?.isVerified === true ? (
                         <CheckCircle2 className="h-6 w-6 shrink-0 text-[#249689]" fill="currentColor" aria-hidden />
                       ) : null}
-                      <ProfileMoreOptionsButton onClick={() => setShowMoreOptions(true)} />
+                      <ProfileQrCodeButton onClick={() => setShowQRModal(true)} />
                       <Link href={`/edit-profile?returnTo=/profile/${userId}`} className="-ml-1">
                         <span className={cn(flutterProfileSkillChip, "px-4 py-2 text-sm font-semibold")}>
                           {t("profile.edit")}
@@ -758,7 +643,7 @@ export default function ProfilePage() {
                         >
                           <MessageSquare className="h-6 w-6 text-[#FF2D2D]" strokeWidth={2.25} />
                         </button>
-                        <ProfileMoreOptionsButton onClick={() => setShowMoreOptions(true)} />
+                        <ProfileQrCodeButton onClick={() => setShowQRModal(true)} />
                       </div>
                     </div>
                   )}
@@ -1213,78 +1098,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {activeTab === "saved" && isOwnProfile && (
-          <div className="rounded-none bg-white px-4 py-4 dark:bg-transparent lg:rounded-lg lg:p-6 dark:lg:bg-transparent">
-            {loadingBookmarks ? (
-              <div className="text-center py-8 text-theme-accent4">Loading saved profiles...</div>
-            ) : (
-              <section>
-                <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Saved Profiles</h3>
-                {bookmarkedProfiles.length === 0 ? (
-                  <p className="text-theme-accent4 py-2">No saved profiles yet.</p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {bookmarkedProfiles.map((profile) => (
-                      <div
-                        key={profile.uid}
-                        onClick={() => router.push(`/profile/${profile.uid}`)}
-                        className="mx-auto flex w-full max-w-[24rem] items-center gap-3 rounded-2xl border border-black/75 bg-[#F6F6F6] p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#efefef] dark:border-[#ff3a3a]/70 dark:bg-darkBlue-203 dark:hover:bg-darkBlue-343/70"
-                      >
-                        <div
-                          className={cn(
-                            "flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden border-[3px] border-[#E53935] bg-[#ECECEC] text-2xl font-medium text-gray-500 dark:bg-darkBlue-013 dark:text-white/85",
-                            avatarShapeClass
-                          )}
-                        >
-                          {getPhotoUrl(profile) && !imageErrors.has(profile.uid) ? (
-                            <img
-                              src={getPhotoUrl(profile)!}
-                              alt={profile.fullName || profile.username || "User"}
-                              className="h-full w-full object-cover"
-                              onError={() => handleImageError(profile.uid)}
-                              loading="lazy"
-                            />
-                          ) : (
-                            <span>{getInitials(profile.fullName || profile.username || profile.email?.split("@")[0])}</span>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="line-clamp-1 text-0.875rem] font-bold leading-tight text-gray-900 dark:text-white">
-                            {profile.fullName || profile.username || profile.email?.split("@")[0] || "User"}
-                          </h3>
-                          {profile.location && (
-                            <div className="mt-0.5 flex items-start gap-1.5 text-[0.8rem] leading-tight text-gray-700 dark:text-white/90">
-                              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-black dark:text-white" />
-                              <p className="line-clamp-2">{profile.location}</p>
-                            </div>
-                          )}
-                          <div className="mt-2">
-                            <span className="inline-flex items-center rounded-full bg-[#42B964] px-2 py-0.5 text-[10px] font-semibold text-white">
-                              {profile.currentRole || profile.role || "Client"}
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleUnsaveFromSavedCard(profile.uid);
-                          }}
-                          disabled={unsavingProfileId === profile.uid}
-                          className="flex h-[72px] w-[62px] shrink-0 items-center justify-center rounded-2xl bg-[#F3DDE0] transition-colors hover:bg-[#ebcfd4] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#3A4BA0]/70 dark:hover:bg-[#465bb6]/70"
-                          aria-label="Unsave profile"
-                        >
-                          <Bookmark className="h-6 w-6 fill-[#F21A1A] text-[#F21A1A]" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-          </div>
-        )}
-
         {/* Legacy liked-tab UI (not in Flutter profile) — keep disabled
         {false && activeTab === "liked" && (
           <div className="rounded-none bg-white px-4 py-4 dark:bg-transparent lg:rounded-lg lg:p-6 dark:lg:bg-transparent">
@@ -1346,15 +1159,6 @@ export default function ProfilePage() {
         )}
         */}
 
-        <ProfileMoreOptionsSheet
-          open={showMoreOptions}
-          isOwnProfile={isOwnProfile}
-          isSaved={isProfileSaved}
-          saving={bookmarkSaving}
-          onClose={() => setShowMoreOptions(false)}
-          onToggleSave={isOwnProfile ? undefined : () => void handleToggleProfileBookmark()}
-          onShowQr={() => setShowQRModal(true)}
-        />
 
         {profileUser ? (
           <ProfilePhotoLightbox

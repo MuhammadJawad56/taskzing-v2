@@ -2,7 +2,6 @@
  * Showcase / portfolio via TaskZing REST API (`/showcase-work`).
  */
 import { apiFetchJson, isBackendConfigured } from "./http";
-import { bookmarkProfile } from "@/lib/api/users";
 
 export interface ShowcaseItem {
   id?: string;
@@ -407,11 +406,6 @@ export async function bookmarkShowcase(
   const set = readBookmarkSet(userId);
   set.add(showcaseId);
   writeBookmarkSet(userId, set);
-  try {
-    await bookmarkProfile(userId, showcaseUserId, { suppressSavedToast: true });
-  } catch {
-    // optional
-  }
 }
 
 export async function unbookmarkShowcase(

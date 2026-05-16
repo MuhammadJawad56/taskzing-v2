@@ -1,6 +1,6 @@
 import type { User } from "@/lib/types/user";
 
-export type ProfileTabId = "jobs" | "showcases" | "reviews" | "saved";
+export type ProfileTabId = "jobs" | "showcases" | "reviews";
 export type ProfileJobFilter = "all" | "active" | "complete";
 
 export function normalizeRole(role?: string | null): string {
@@ -36,19 +36,12 @@ export function shouldShowShowcasesTab(
   return viewedIsProvider;
 }
 
-export function buildProfileTabs(
-  viewerRole: string,
-  viewedRole: string,
-  options?: { includeSaved?: boolean },
-): ProfileTabId[] {
+export function buildProfileTabs(viewerRole: string, viewedRole: string): ProfileTabId[] {
   const tabs: ProfileTabId[] = ["jobs"];
   if (shouldShowShowcasesTab(viewerRole, viewedRole)) {
     tabs.push("showcases");
   }
   tabs.push("reviews");
-  if (options?.includeSaved) {
-    tabs.push("saved");
-  }
   return tabs;
 }
 

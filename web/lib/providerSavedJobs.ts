@@ -1,4 +1,3 @@
-import { bookmarkProfile } from "@/lib/api/users";
 
 function key(userId: string): string {
   return `taskzing_saved_jobs_${userId}`;
@@ -40,14 +39,6 @@ export async function saveJobForUser(
   const set = readSet(userId);
   set.add(jobId);
   writeSet(userId, set);
-  const posterId = opts?.posterUserId?.trim();
-  if (posterId && posterId !== userId) {
-    try {
-      await bookmarkProfile(userId, posterId, { suppressSavedToast: true });
-    } catch {
-      // ignore
-    }
-  }
 }
 
 export async function unsaveJobForUser(userId: string, jobId: string): Promise<void> {

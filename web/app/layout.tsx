@@ -3,7 +3,6 @@ import Script from "next/script";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { AuthProvider } from "@/lib/api/AuthContext";
-import { ProfileBookmarkSnackbar } from "@/components/profile/ProfileBookmarkSnackbar";
 import { DraftSavedSnackbar } from "@/components/ui/DraftSavedSnackbar";
 import { ThemeProvider } from "@/lib/contexts/ThemeContext";
 import { LanguageProvider } from "@/lib/contexts/LanguageContext";
@@ -117,7 +116,6 @@ export default function RootLayout({
           <AuthProvider>
             <Header />
             <main className="min-h-0 flex-1">{children}</main>
-            <ProfileBookmarkSnackbar />
             <DraftSavedSnackbar />
           </AuthProvider>
           </LanguageProvider>

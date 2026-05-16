@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, Send, Menu, ArrowLeftRight, Briefcase, Check, CreditCard, X } from "lucide-react";
+import { Bell, Send, Menu, ArrowLeftRight, Briefcase, Check, CreditCard, X, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/api/AuthContext";
 import { useRouter } from "next/navigation";
@@ -427,6 +427,17 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
                 </span>
               ) : null}
             </Link>
+
+            {onQRClick ? (
+              <button
+                type="button"
+                onClick={onQRClick}
+                className="inline-flex rounded-lg border border-gray-300 bg-gray-100 p-2 text-gray-900 transition-colors hover:bg-gray-200 dark:border-gray-600 dark:bg-darkBlue-203 dark:text-white dark:hover:bg-darkBlue-343"
+                aria-label="QR Code"
+              >
+                <QrCode className="h-5 w-5" strokeWidth={2} />
+              </button>
+            ) : null}
 
             {/* ChatZing AI — gradient ring (shared with chat page) */}
             <Link

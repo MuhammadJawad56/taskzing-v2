@@ -1,0 +1,9 @@
+{
+  "name": "taskzing-website-v2",
+  "private": true,
+  "scripts": {
+    "vercel-build": "npm run vercel-build --prefix web && node scripts/sync-vercel-next.mjs",
+    "build": "npm run build --prefix web",
+    "dev": "npm run dev --prefix web"
+  }
+}

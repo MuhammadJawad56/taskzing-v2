@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskZing Client Agreement Form</title>
+    <style>
+      :root {
+        color-scheme: only light;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #1f2937;
+        background: #f3f4f6;
+      }
+      .page {
+        max-width: 960px;
+        margin: 24px auto;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 24px;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 16px;
+        margin-bottom: 20px;
+      }
+      .logo {
+        height: 42px;
+        width: auto;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      h2 {
+        margin: 24px 0 10px;
+        font-size: 16px;
+        color: #111827;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 6px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 16px;
+      }
+      .full {
+        grid-column: 1 / -1;
+      }
+      .line {
+        border-bottom: 1px solid #9ca3af;
+        min-height: 22px;
+      }
+      .label {
+        font-size: 13px;
+        margin-bottom: 3px;
+        color: #374151;
+      }
+      .notice {
+        font-size: 13px;
+        line-height: 1.45;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e3a8a;
+        padding: 12px;
+        border-radius: 10px;
+      }
+      ul {
+        margin: 8px 0 0 20px;
+        padding: 0;
+      }
+      li {
+        margin: 4px 0;
+      }
+      .sign-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 14px;
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .page {
+          margin: 0;
+          border: 0;
+          border-radius: 0;
+          max-width: none;
+          padding: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <img class="logo" src="/images/logos/Taskzing-Logo-light-mode_1.png" alt="TaskZing Logo" />
+        <h1>Client-Provider Service Agreement (Form)</h1>
+      </div>
+
+      <div class="notice">
+        By using and signing this form, both parties agree to TaskZing Terms and Conditions. TaskZing is a platform
+        connector and is not responsible for payment handling, payment disputes, service disputes, losses, or liabilities
+        between client and provider unless explicitly stated in an official TaskZing payment workflow.
+      </div>
+
+      <h2>1) Basic Information</h2>
+      <div class="grid">
+        <div><div class="label">Document ID</div><div class="line"></div></div>
+        <div><div class="label">Agreement Date</div><div class="line"></div></div>
+      </div>
+
+      <h2>2) Client Details</h2>
+      <div class="grid">
+        <div><div class="label">Client Full Name</div><div class="line"></div></div>
+        <div><div class="label">Client TaskZing User ID</div><div class="line"></div></div>
+        <div><div class="label">Client Phone</div><div class="line"></div></div>
+        <div><div class="label">Client Email</div><div class="line"></div></div>
+        <div class="full"><div class="label">Client Address</div><div class="line"></div></div>
+      </div>
+
+      <h2>3) Provider Details</h2>
+      <div class="grid">
+        <div><div class="label">Provider Full Name</div><div class="line"></div></div>
+        <div><div class="label">Provider TaskZing User ID</div><div class="line"></div></div>
+        <div><div class="label">Provider Phone</div><div class="line"></div></div>
+        <div><div class="label">Provider Email</div><div class="line"></div></div>
+        <div class="full"><div class="label">Provider Address</div><div class="line"></div></div>
+      </div>
+
+      <h2>4) Task / Service Details</h2>
+      <div class="grid">
+        <div><div class="label">Task Title</div><div class="line"></div></div>
+        <div><div class="label">Task Category</div><div class="line"></div></div>
+        <div class="full"><div class="label">Task Description / Scope</div><div class="line"></div><div class="line"></div></div>
+        <div><div class="label">Location of Work</div><div class="line"></div></div>
+        <div><div class="label">Estimated Duration</div><div class="line"></div></div>
+        <div><div class="label">Start Date</div><div class="line"></div></div>
+        <div><div class="label">End Date</div><div class="line"></div></div>
+      </div>
+
+      <h2>5) Payment Terms (Client ↔ Provider)</h2>
+      <div class="grid">
+        <div><div class="label">Payment Type (Fixed / Hourly / Milestone)</div><div class="line"></div></div>
+        <div><div class="label">Currency</div><div class="line"></div></div>
+        <div><div class="label">Agreed Amount / Rate</div><div class="line"></div></div>
+        <div><div class="label">Advance Payment (if any)</div><div class="line"></div></div>
+        <div class="full"><div class="label">Payment Schedule / Milestones</div><div class="line"></div><div class="line"></div></div>
+        <div class="full"><div class="label">Payment Method Agreed</div><div class="line"></div></div>
+      </div>
+
+      <h2>6) Terms Acknowledgement</h2>
+      <ul>
+        <li>Client and Provider agree to TaskZing Terms and Conditions.</li>
+        <li>TaskZing is not a direct party to this service contract between users.</li>
+        <li>
+          TaskZing is not liable for payment disputes, non-payment, delays, quality disputes, damages, misconduct, or
+          contract breaches between client and provider.
+        </li>
+      </ul>
+
+      <h2>7) Signatures</h2>
+      <div class="sign-row">
+        <div><div class="label">Client Signature</div><div class="line"></div></div>
+        <div><div class="label">Provider Signature</div><div class="line"></div></div>
+        <div><div class="label">Date</div><div class="line"></div></div>
+      </div>
+    </div>
+  </body>
+</html>

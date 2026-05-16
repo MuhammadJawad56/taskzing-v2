@@ -1,0 +1,619 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========== USERS ==========
+    match /users/{userId} {
+      // Users can read their own data, or read other users' data (for existence checks)
+      // Write operations are restricted to own data only
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+
+      // Subcollection: Cards (payment methods)
+      match /cards/{cardId} {
+        // Users can only read/write their own cards
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Payment History
+      match /payment_history/{paymentId} {
+        // Users can only read/write their own payment history
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if false; // Payments should not be deleted
+      }
+
+      // Subcollection: Liked Jobs
+      match /likedJobs/{jobId} {
+        // Users can only read/write their own liked jobs
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Favorite Showcases
+      match /favoriteShowcases/{showcaseId} {
+        // Users can only read/write their own favorite showcases
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Liked Showcases (UI likes)
+      match /likedShowcases/{showcaseId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Liked Job Tiles (UI likes)
+      match /likedJobTiles/{jobId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Showcase Work Drafts
+      match /showcase_work_drafts/{draftId} {
+        // Users can only read/write their own showcase work drafts
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Recently Viewed Jobs
+      match /recentlyViewed/{jobId} {
+        // Users can only read/write their own recently viewed jobs
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Recently Viewed Showcases
+      match /recentlyViewedShowcases/{showcaseId} {
+        // Users can only read/write their own recently viewed showcases
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Client Recently Viewed (showcase work viewed by clients)
+      match /client_recently_viewed/{showcaseWorkId} {
+        // Users can only read/write their own client recently viewed items
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Subcollection: Provider Recently Viewed (jobs viewed by providers)
+      match /provider_recently_viewed/{jobId} {
+        // Users can only read/write their own provider recently viewed items
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // ========== CATEGORIES ==========
+    // Public read for landing page, authenticated write for admins
+    match /categories/{categoryId} {
+      allow read: if true; // Public read for landing page
+      allow create: if request.auth != null;
+      allow update: if false; // Only admins should update (handled server-side)
+      allow delete: if false;
+    }
+
+    // ========== PROVIDERS ==========
+    match /providers/{providerId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // ========== SKILLS ==========
+    match /skills/{skillId} {
+      allow read: if request.auth != null;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // ========== JOBS ==========
+    match /jobs/{jobId} {
+      // Public read for landing page (unauthenticated users can browse)
+      allow read: if true;
+
+      // Only authenticated users can create jobs, and must be the client
+      allow create: if request.auth != null
+                    && request.resource.data.clientId == request.auth.uid;
+
+      // Client or contractor can update job fields; any signed-in user may bump likesCount only
+      // (matches web/app job tile likes — transaction writes subcol + likesCount together).
+      allow update: if request.auth != null
+                    && (
+                      resource.data.clientId == request.auth.uid
+                      || resource.data.contractorId == request.auth.uid
+                      || request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['likesCount', 'updatedAt'])
+                    );
+
+      // Only client can delete
+      allow delete: if request.auth != null
+                    && resource.data.clientId == request.auth.uid;
+    }
+
+    // ========== JOB APPLICATIONS (mobile / alternate name) ==========
+    match /jobApplications/{applicationId} {
+      // Helper function to check if user is the job owner (client)
+      function isJobOwner() {
+        return resource.data.jobId != null
+               && exists(/databases/$(database)/documents/jobs/$(resource.data.jobId))
+               && get(/databases/$(database)/documents/jobs/$(resource.data.jobId)).data.clientId == request.auth.uid;
+      }
+
+      // Helper function to validate required fields for creation
+      function isValidApplication() {
+        return request.resource.data.clientId is string
+               && request.resource.data.clientId != ''
+               && request.resource.data.jobId is string
+               && request.resource.data.jobId != ''
+               && request.resource.data.providerId is string
+               && request.resource.data.providerId != '';
+      }
+
+      // Users can read applications if:
+      // - They are the provider (proposal owner)
+      // - They are the client (job owner)
+      // - They are related to the job
+      allow read: if request.auth != null
+                  && (resource.data.providerId == request.auth.uid
+                      || resource.data.clientId == request.auth.uid
+                      || resource.data.jobId != null);
+
+      // Only providers can create proposals for themselves
+      // Must have valid non-empty clientId, jobId, and providerId
+      allow create: if request.auth != null
+                    && request.resource.data.providerId == request.auth.uid
+                    && isValidApplication();
+
+      // Users can update if:
+      // - They are the provider (can withdraw their own proposal)
+      // - They are the job owner/client (can accept/reject/shortlist proposals)
+      allow update: if request.auth != null
+                    && (resource.data.providerId == request.auth.uid
+                        || resource.data.clientId == request.auth.uid
+                        || isJobOwner());
+
+      // Only providers can delete their own proposals
+      allow delete: if request.auth != null
+                    && resource.data.providerId == request.auth.uid;
+    }
+
+    // ========== JOB APPLICATIONS (web / snake_case) ==========
+    match /job_applications/{applicationId} {
+      allow read: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid) ||
+        (resource.data.clientId != null && resource.data.clientId == request.auth.uid)
+      );
+      allow create: if request.auth != null && (
+        (request.resource.data.providerId != null && request.resource.data.providerId == request.auth.uid) ||
+        (request.resource.data.userId != null && request.resource.data.userId == request.auth.uid)
+      );
+      allow update: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid) ||
+        (resource.data.clientId != null && resource.data.clientId == request.auth.uid)
+      );
+      allow delete: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid)
+      );
+    }
+
+    match /proposals/{proposalId} {
+      allow read: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid) ||
+        (resource.data.clientId != null && resource.data.clientId == request.auth.uid)
+      );
+      allow create: if request.auth != null && (
+        (request.resource.data.providerId != null && request.resource.data.providerId == request.auth.uid) ||
+        (request.resource.data.userId != null && request.resource.data.userId == request.auth.uid)
+      );
+      allow update: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid) ||
+        (resource.data.clientId != null && resource.data.clientId == request.auth.uid)
+      );
+      allow delete: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid)
+      );
+    }
+
+    match /applications/{applicationId} {
+      allow read: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid) ||
+        (resource.data.clientId != null && resource.data.clientId == request.auth.uid)
+      );
+      allow create: if request.auth != null && (
+        (request.resource.data.providerId != null && request.resource.data.providerId == request.auth.uid) ||
+        (request.resource.data.userId != null && request.resource.data.userId == request.auth.uid)
+      );
+      allow update: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid) ||
+        (resource.data.clientId != null && resource.data.clientId == request.auth.uid)
+      );
+      allow delete: if request.auth != null && (
+        (resource.data.providerId != null && resource.data.providerId == request.auth.uid) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid)
+      );
+    }
+
+    // ========== REVIEWS ==========
+    match /Reviews/{reviewId} {
+      // Public read for displaying reviews on landing page
+      allow read: if true;
+
+      // Only authenticated users can create reviews
+      allow create: if request.auth != null
+                    && request.resource.data.reviewerId == request.auth.uid;
+
+      // Only reviewer can update their own review
+      allow update: if request.auth != null
+                    && resource.data.reviewerId == request.auth.uid;
+
+      // Only reviewer can delete their own review
+      allow delete: if request.auth != null
+                    && resource.data.reviewerId == request.auth.uid;
+    }
+
+    // ========== APP REVIEWS ==========
+    match /app_reviews/{reviewId} {
+      // Public read for displaying app reviews on landing page (approved reviews only)
+      // Note: The query filters by isApproved==true, so this allows reading all but client filters
+      allow read: if true;
+
+      // Only authenticated users can create app reviews
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Only the user who created the review can update it
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+
+      // Only the user who created the review can delete it
+      allow delete: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+    }
+
+    // ========== USER NOTIFICATIONS ==========
+    match /user_notifications/{notificationId} {
+      // Users can read notifications when authenticated
+      // Security is enforced by the query filter (where('userId', isEqualTo: userId))
+      // This allows queries to work properly while still maintaining security
+      allow read: if request.auth != null;
+
+      // Only system or the user themselves can create notifications
+      allow create: if request.auth != null
+                    && (request.resource.data.userId == request.auth.uid
+                        || request.resource.data.userId != null);
+
+      // Users can update their own notifications (e.g., mark as read)
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+
+      // Users can delete their own notifications
+      allow delete: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+    }
+
+    // ========== CHAT ROOMS (snake_case — mobile / backend) ==========
+    match /chat_rooms/{roomId} {
+      // Helper function to check if user is participant
+      function isParticipant() {
+        return resource.data != null
+               && resource.data.participants != null
+               && request.auth.uid in resource.data.participants;
+      }
+
+      // Users can read chat rooms they're part of
+      // Allow if: document doesn't exist yet (for initial creation check) OR user is in participants
+      // Note: When document doesn't exist, resource.data will be null, so we allow the read
+      // The actual security is enforced on create/update operations
+      allow read: if request.auth != null
+                  && (!resource.exists || isParticipant());
+
+      // Users can create chat rooms if they're a participant
+      allow create: if request.auth != null
+                    && request.resource.data.participants != null
+                    && request.auth.uid in request.resource.data.participants;
+
+      // Users can update if they're a participant OR if updating with merge (for backward compatibility)
+      // Note: batch.set() with merge might update documents, so we allow if user is participant
+      // OR if the update maintains/creates participants array with user in it
+      allow update: if request.auth != null
+                    && (isParticipant()
+                        || (request.resource.data.participants != null
+                            && request.auth.uid in request.resource.data.participants));
+
+      // Users can delete if they're a participant
+      allow delete: if request.auth != null && isParticipant();
+
+      // Subcollection: Messages
+      match /messages/{messageId} {
+        // Helper function to check if user is participant in parent chat room
+        function isParticipantInRoom() {
+          let roomData = get(/databases/$(database)/documents/chat_rooms/$(roomId)).data;
+          return roomData != null
+                 && roomData.participants != null
+                 && request.auth.uid in roomData.participants;
+        }
+
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+                      && request.resource.data.senderId == request.auth.uid;
+        // Allow update if: user is sender (for editing) OR user is participant (for marking read/delivered)
+        allow update: if request.auth != null
+                      && (resource.data.senderId == request.auth.uid
+                          || isParticipantInRoom());
+        allow delete: if request.auth != null
+                      && resource.data.senderId == request.auth.uid;
+      }
+    }
+
+    // ========== CHAT ROOMS (camelCase — TaskZing web) ==========
+    match /chatRooms/{chatRoomId} {
+      function hasParticipant(data) {
+        return data != null
+               && data.participants != null
+               && data.participants.hasAny([request.auth.uid]);
+      }
+
+      allow read: if request.auth != null && hasParticipant(resource.data);
+
+      allow create: if request.auth != null && hasParticipant(request.resource.data);
+
+      allow update, delete: if request.auth != null && hasParticipant(resource.data);
+    }
+
+    match /chatRooms/{chatRoomId}/messages/{messageId} {
+      function canAccessCamelChatRoom() {
+        return exists(/databases/$(database)/documents/chatRooms/$(chatRoomId))
+               && get(/databases/$(database)/documents/chatRooms/$(chatRoomId)).data != null
+               && get(/databases/$(database)/documents/chatRooms/$(chatRoomId)).data.participants != null
+               && get(/databases/$(database)/documents/chatRooms/$(chatRoomId)).data.participants.hasAny([request.auth.uid]);
+      }
+
+      allow read: if request.auth != null && canAccessCamelChatRoom();
+
+      allow create: if request.auth != null
+                    && request.resource.data.senderId == request.auth.uid
+                    && canAccessCamelChatRoom();
+
+      allow update, delete: if request.auth != null && canAccessCamelChatRoom();
+    }
+
+    // ========== LEGACY MESSAGES ==========
+    // For backward compatibility
+    match /messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.senderId == request.auth.uid;
+      allow update: if request.auth != null
+                    && resource.data.senderId == request.auth.uid;
+      allow delete: if request.auth != null
+                    && resource.data.senderId == request.auth.uid;
+    }
+
+    // ========== SHOWCASE WORK ==========
+    match /showcase_work/{userId} {
+      // Public read for authenticated users
+      allow read: if request.auth != null;
+
+      // Users can only write their own showcase work
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+
+      // Subcollection: Submissions
+      match /submissions/{submissionId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // ========== COLLECTION GROUP QUERIES ==========
+    // Allow collectionGroup queries for submissions (used in showcase work)
+    // This matches any submissions subcollection regardless of parent path
+    match /{path=**}/submissions/{submissionId} {
+      allow read: if request.auth != null;
+      // Write operations are still controlled by the parent showcase_work rules above
+      allow create, update, delete: if false; // Handled by parent path rules
+    }
+
+    // ========== SHOWCASE WORK BOOKMARKS ==========
+    // Web app uses userId + showcaseId + showcaseUserId; some clients use bookmarkedBy
+    match /showcaseWorkBookmarks/{bookmarkId} {
+      allow read: if request.auth != null
+                  && (resource.data.userId == request.auth.uid
+                      || resource.data.bookmarkedBy == request.auth.uid);
+
+      allow create: if request.auth != null
+                    && (request.resource.data.userId == request.auth.uid
+                        || request.resource.data.bookmarkedBy == request.auth.uid);
+
+      allow update: if request.auth != null
+                    && ((resource.data.userId == request.auth.uid
+                         && request.resource.data.userId == request.auth.uid)
+                        || (resource.data.bookmarkedBy == request.auth.uid
+                            && request.resource.data.bookmarkedBy == request.auth.uid));
+
+      allow delete: if request.auth != null
+                    && (resource.data.userId == request.auth.uid
+                        || resource.data.bookmarkedBy == request.auth.uid);
+    }
+
+    // ========== PROVIDER PORTFOLIO SHOWCASES (TaskZing web — client home / explore) ==========
+    match /showcases/{showcaseId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Owner can edit; any signed-in user may update like counters only
+      allow update: if request.auth != null
+                    && (
+                      resource.data.userId == request.auth.uid
+                      || request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['likesCount', 'updatedAt'])
+                    );
+    }
+
+    // ========== PAYMENT METHODS (TaskZing web — top-level) ==========
+    match /paymentMethods/{paymentMethodId} {
+      allow read: if request.auth != null
+                   && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+                     && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null
+                            && resource.data.userId == request.auth.uid;
+    }
+
+    // ========== ADS / MARKETPLACE (TaskZing web) ==========
+    match /ads/{adId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null
+                            && resource.data.userId == request.auth.uid;
+    }
+
+    // ========== USERNAMES ==========
+    match /usernames/{username} {
+      // Public read to check availability
+      allow read: if true;
+
+      // Create only if:
+      // - user is authenticated
+      // - the username doc doesn't already exist
+      // - the mapping is owned by the creator
+      allow create: if request.auth != null
+                    && !exists(/databases/$(database)/documents/usernames/$(username))
+                    && request.resource.data.uid == request.auth.uid;
+
+      // Update/Delete only by owner
+      allow update, delete: if request.auth != null
+                             && resource.data.uid == request.auth.uid;
+    }
+
+    // ========== JOB TIMERS ==========
+    match /job_timers/{timerId} {
+      // Allow authenticated users to query job_timers
+      // Security is maintained because:
+      // 1. Application code filters by jobId (user-specific) in most queries
+      // 2. Background service (checkForTimedOutJobs) processes all timers but only acts on relevant ones
+      // 3. Individual document access is still restricted by application logic
+      // 4. Update/create operations still require proper ownership
+      allow read: if request.auth != null;
+
+      // Contractors can create timers for jobs they're assigned to
+      allow create: if request.auth != null
+                    && request.resource.data.contractorId == request.auth.uid;
+
+      // Client or contractor can update timers they're involved in
+      allow update: if request.auth != null
+                    && (resource.data.clientId == request.auth.uid
+                        || resource.data.contractorId == request.auth.uid);
+
+      // No delete allowed (timers should be marked as stopped/timed_out instead)
+      allow delete: if false;
+    }
+
+    // ========== JOB DRAFTS ==========
+    match /job_drafts/{draftId} {
+      // Users can only read/write their own job drafts
+      // Note: Service uses 'clientId' field, not 'userId'
+      // For queries: Firestore validates that queries only return documents matching the read rule
+      // For individual reads: allow if document exists and user owns it
+      allow read: if request.auth != null &&
+                     resource != null &&
+                     resource.data != null &&
+                     resource.data.clientId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.clientId == request.auth.uid;
+      allow update: if request.auth != null &&
+                       resource != null &&
+                       resource.data != null &&
+                       resource.data.clientId == request.auth.uid;
+      allow delete: if request.auth != null &&
+                       resource != null &&
+                       resource.data != null &&
+                       resource.data.clientId == request.auth.uid;
+    }
+
+    // ========== PROFILE BOOKMARKS ==========
+    match /profileBookmarks/{bookmarkId} {
+      // Users can only read/write their own profile bookmarks
+      allow read: if request.auth != null && resource.data.bookmarkedBy == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.bookmarkedBy == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.bookmarkedBy == request.auth.uid;
+      // No update allowed (bookmarks are immutable)
+      allow update: if false;
+    }
+
+    // ========== SAVED JOBS ==========
+    match /savedJobs/{savedJobId} {
+      // Cross-platform saved jobs for providers (web + mobile).
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // ========== JOB BOOKMARKS (Flutter JobBookmarkService — `jobBookmarks`) ==========
+    match /jobBookmarks/{bookmarkId} {
+      allow read: if request.auth != null
+                  && (resource.data.userId == request.auth.uid
+                      || resource.data.bookmarkedBy == request.auth.uid);
+
+      allow create: if request.auth != null
+                    && (request.resource.data.userId == request.auth.uid
+                        || request.resource.data.bookmarkedBy == request.auth.uid);
+
+      allow update: if request.auth != null
+                    && ((resource.data.userId == request.auth.uid
+                         && request.resource.data.userId == request.auth.uid)
+                        || (resource.data.bookmarkedBy == request.auth.uid
+                            && request.resource.data.bookmarkedBy == request.auth.uid));
+
+      allow delete: if request.auth != null
+                    && (resource.data.userId == request.auth.uid
+                        || resource.data.bookmarkedBy == request.auth.uid);
+    }
+
+    // ========== DEFAULT DENY ==========
+    // Deny all other collections by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

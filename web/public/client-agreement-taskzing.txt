@@ -1,0 +1,124 @@
+TASKZING CLIENT-PROVIDER SERVICE AGREEMENT (FORM)
+
+Document ID: ______________________
+Agreement Date: ___________________
+
+IMPORTANT NOTICE:
+By signing this agreement, both parties confirm that they have read and agree to TaskZing Terms and Conditions.
+TaskZing is a platform connector and is not responsible for direct payment handling between users unless explicitly stated.
+
+----------------------------------------------------------------------
+SECTION 1: CLIENT DETAILS
+----------------------------------------------------------------------
+
+CLIENT INFORMATION
+Client Full Name: _________________________________________________
+Client TaskZing User ID (if available): ____________________________
+Client Phone: _____________________________________________________
+Client Email: _____________________________________________________
+Client Address: ___________________________________________________
+
+PROVIDER INFORMATION
+Provider Full Name: _______________________________________________
+Provider TaskZing User ID (if available): __________________________
+Provider Phone: ___________________________________________________
+Provider Email: ___________________________________________________
+Provider Address: _________________________________________________
+
+----------------------------------------------------------------------
+SECTION 2: TASK / SERVICE DETAILS
+----------------------------------------------------------------------
+
+Task Title: _______________________________________________________
+Task Category: ____________________________________________________
+Task Description / Scope:
+___________________________________________________________________
+___________________________________________________________________
+___________________________________________________________________
+
+Location of Work: _________________________________________________
+Start Date: ___________________    End Date: _______________________
+Estimated Duration: _______________________________________________
+
+----------------------------------------------------------------------
+SECTION 3: PAYMENT TERMS (CLIENT <-> PROVIDER)
+----------------------------------------------------------------------
+
+Payment Type (tick one): [ ] Fixed Price   [ ] Hourly   [ ] Milestone
+Currency: _____________________
+Agreed Amount / Rate: _____________________________________________
+Advance Payment (if any): _________________________________________
+Payment Schedule / Milestones:
+___________________________________________________________________
+___________________________________________________________________
+
+Payment Method Agreed By Both Parties:
+___________________________________________________________________
+
+Late Payment Terms (if any):
+___________________________________________________________________
+
+----------------------------------------------------------------------
+SECTION 4: RESPONSIBILITIES & DELIVERABLES
+----------------------------------------------------------------------
+
+Provider Responsibilities:
+___________________________________________________________________
+___________________________________________________________________
+
+Client Responsibilities:
+___________________________________________________________________
+___________________________________________________________________
+
+Expected Deliverables:
+___________________________________________________________________
+___________________________________________________________________
+
+----------------------------------------------------------------------
+SECTION 5: CANCELLATION / CHANGES / DISPUTES
+----------------------------------------------------------------------
+
+Cancellation Terms:
+___________________________________________________________________
+
+Revision / Change Request Terms:
+___________________________________________________________________
+
+Dispute Resolution Between Client and Provider:
+___________________________________________________________________
+
+----------------------------------------------------------------------
+SECTION 6: TASKZING TERMS ACKNOWLEDGEMENT
+----------------------------------------------------------------------
+
+Both parties agree that:
+1. They have read and accepted TaskZing Terms and Conditions.
+2. TaskZing is not a direct party to this client-provider service contract.
+3. TaskZing is not liable for payment disputes, non-payment, service quality,
+   delays, losses, damages, misconduct, or contractual disputes between users.
+4. Payment obligations are solely between the client and provider, unless a
+   dedicated TaskZing payment workflow is explicitly provided.
+5. Each party is responsible for legal compliance in their jurisdiction.
+
+----------------------------------------------------------------------
+SECTION 7: SIGNATURES
+----------------------------------------------------------------------
+
+CLIENT SIGNATURE
+Name: _____________________________________________________________
+Signature: ________________________________________________________
+Date: _____________________________________________________________
+
+PROVIDER SIGNATURE
+Name: _____________________________________________________________
+Signature: ________________________________________________________
+Date: _____________________________________________________________
+
+OPTIONAL WITNESS / REFERENCE
+Name: _____________________________________________________________
+Signature: ________________________________________________________
+Date: _____________________________________________________________
+
+----------------------------------------------------------------------
+END OF AGREEMENT
+For complete platform-wide legal terms, refer to TaskZing Terms and Conditions.

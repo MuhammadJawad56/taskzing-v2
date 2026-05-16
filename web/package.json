@@ -1,0 +1,53 @@
+{
+  "name": "taskzing-website",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "dev:clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\" && next dev",
+    "build": "next build",
+    "vercel-build": "node scripts/vercel-build.mjs",
+    "vercel:build": "node scripts/vercel-build.mjs",
+    "vercel": "node scripts/vercel-build.mjs",
+    "start": "next start",
+    "lint": "next lint",
+    "badges:trim": "node scripts/process-store-badges.mjs trim",
+    "badges:prepare": "node scripts/process-store-badges.mjs prepare",
+    "generate:favicon": "node scripts/generate-favicons.mjs"
+  },
+  "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
+    "@react-oauth/google": "^0.13.5",
+    "@stripe/react-stripe-js": "^5.4.1",
+    "@stripe/stripe-js": "^8.6.0",
+    "@types/leaflet": "^1.9.21",
+    "clsx": "^2.1.0",
+    "date-fns": "^3.0.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.344.0",
+    "next": "^14.2.0",
+    "pdf-lib": "^1.17.1",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-leaflet": "^4.2.1",
+    "stripe": "^20.3.1",
+    "tailwind-merge": "^2.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "postcss": "^8.4.33",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.1",
+    "to-ico": "^1.1.5",
+    "typescript": "^5.3.3"
+  }
+}

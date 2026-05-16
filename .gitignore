@@ -1,0 +1,23 @@
+# Local Flutter reference (do not publish)
+reference/*.zip
+
+# Flutter project — kept locally only; this repo is web (`web/`) + docs
+TaskZing-Flutter-2/
+
+# Next.js app (`web/`)
+.next/
+web/node_modules/
+web/functions/node_modules/
+web/.next/
+web/out/
+web/.env
+web/.env.local
+web/.vercel
+web/*.tsbuildinfo
+web/next-env.d.ts
+
+# Recovery / temp clones (never commit)
+_recover_web/
+
+# Old nested path (safe to delete locally; app lives in `web/`)
+Zingte-Taskizng-Website-main/

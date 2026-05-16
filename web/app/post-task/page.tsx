@@ -2782,11 +2782,11 @@ export default function PostTaskPage() {
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {/* Important Notice */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex gap-3">
-                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="rounded-lg border border-[#D94856]/25 bg-[#D94856]/8 p-4 flex gap-3 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+                <Info className="h-5 w-5 text-[#D94856] dark:text-white flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-1">Important Notice</h3>
-                  <p className="text-sm text-blue-800 dark:text-blue-400">
+                  <h3 className="font-semibold text-[#D94856] dark:text-white mb-1">Important Notice</h3>
+                  <p className="text-sm text-gray-900 dark:text-white">
                     These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.
                   </p>
                 </div>

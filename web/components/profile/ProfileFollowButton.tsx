@@ -4,14 +4,17 @@ import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import {
   followUserIdempotent,
-  unfollowUser,
+  getFollowStatusFull,
+  unfollowUserRelaxed,
 } from "@/lib/api/userFollow";
 import { isBackendConfigured } from "@/lib/backendConfig";
 import { UnfollowConfirmSheet } from "./UnfollowConfirmSheet";
 
 type ProfileFollowButtonProps = {
+  /** Canonical backend user id (route param / `profileUser.id`). */
   userId: string;
   displayName: string;
   isFollowing: boolean;
@@ -19,7 +22,12 @@ type ProfileFollowButtonProps = {
   loading?: boolean;
   disabled?: boolean;
   compact?: boolean;
-  onFollowChange?: (next: { isFollowing: boolean; followersDelta: number }) => void;
+  onFollowChange?: (status: {
+    isFollowing: boolean;
+    isFollowedBy: boolean;
+    followersCount: number;
+    followingCount: number;
+  }) => void;
   className?: string;
 };
 
@@ -35,8 +43,12 @@ export function ProfileFollowButton({
   className,
 }: ProfileFollowButtonProps) {
   const { t } = useLanguage();
+  const { user: currentUser } = useAuth();
   const [actionLoading, setActionLoading] = useState(false);
   const [showUnfollowSheet, setShowUnfollowSheet] = useState(false);
+
+  const targetId = userId.trim();
+  const isSelf = Boolean(currentUser?.uid && targetId && currentUser.uid === targetId);
 
   const label = isFollowing
     ? t("profile.following")
@@ -44,18 +56,29 @@ export function ProfileFollowButton({
       ? t("profile.followBack")
       : t("profile.follow");
 
+  const syncFromServer = async () => {
+    const status = await getFollowStatusFull(targetId);
+    onFollowChange?.(status);
+    return status;
+  };
+
   const handleFollow = async () => {
-    if (actionLoading || loading || disabled || !userId) return;
+    if (actionLoading || loading || disabled || !targetId || isSelf) return;
+    if (!currentUser) {
+      alert(t("profile.followSignIn"));
+      return;
+    }
     if (!isBackendConfigured()) {
       alert(t("profile.followError"));
       return;
     }
     setActionLoading(true);
     try {
-      await followUserIdempotent(userId);
-      onFollowChange?.({ isFollowing: true, followersDelta: 1 });
-    } catch {
-      alert(t("profile.followError"));
+      await followUserIdempotent(targetId);
+      await syncFromServer();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t("profile.followError");
+      alert(msg || t("profile.followError"));
     } finally {
       setActionLoading(false);
     }
@@ -63,20 +86,25 @@ export function ProfileFollowButton({
 
   const handleUnfollowConfirm = async () => {
     setShowUnfollowSheet(false);
-    if (actionLoading || !userId) return;
+    if (actionLoading || !targetId || isSelf) return;
+    if (!currentUser) {
+      alert(t("profile.followSignIn"));
+      return;
+    }
     setActionLoading(true);
     try {
-      await unfollowUser(userId);
-      onFollowChange?.({ isFollowing: false, followersDelta: -1 });
-    } catch {
-      alert(t("profile.followError"));
+      await unfollowUserRelaxed(targetId);
+      await syncFromServer();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t("profile.followError");
+      alert(msg || t("profile.followError"));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleClick = () => {
-    if (actionLoading || loading || disabled) return;
+    if (actionLoading || loading || disabled || isSelf) return;
     if (isFollowing) {
       setShowUnfollowSheet(true);
     } else {
@@ -91,7 +119,7 @@ export function ProfileFollowButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={disabled || actionLoading}
+        disabled={disabled || actionLoading || isSelf}
         aria-pressed={isFollowing}
         aria-label={label}
         className={cn(

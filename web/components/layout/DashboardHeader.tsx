@@ -18,8 +18,6 @@ import {
 import { addStoredPaymentMethod, getStoredPaymentMethods } from "@/lib/api/payments";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { ChatZingRingIcon } from "@/components/chatzing/ChatZingRingIcon";
-
 // Initialize Stripe - same as payment-method page
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_your_publishable_key_here"
@@ -438,15 +436,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
                 <QrCode className="h-5 w-5" strokeWidth={2} />
               </button>
             ) : null}
-
-            {/* ChatZing AI — gradient ring (shared with chat page) */}
-            <Link
-              href="/dashboard/chatzing-ai"
-              className="flex items-center justify-center transition-transform hover:scale-110"
-              aria-label="ChatZing AI"
-            >
-              <ChatZingRingIcon className="h-8 w-8" />
-            </Link>
 
             {/* Hamburger Menu - Visible on mobile/tablet, hidden on desktop */}
             <button

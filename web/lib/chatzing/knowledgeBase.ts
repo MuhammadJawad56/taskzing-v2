@@ -1,11 +1,6 @@
-// TaskZing Knowledge Base for Chat Zing AI Assistant
+// TaskZing knowledge dataset for ChatZing (served by API via taskzing_help; not used for live replies in the web UI).
 
-export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
+export type { ChatMessage } from "./types";
 
 export interface KnowledgeEntry {
   keywords: string[];
@@ -121,9 +116,11 @@ export const knowledgeBase: KnowledgeEntry[] = [
   // Posting Jobs
   {
     keywords: ["post job", "create job", "how to post", "post a task", "add job"],
+    keywordsFr: ["publier un emploi", "créer un emploi", "comment publier", "ajouter un emploi"],
     category: "Jobs",
-    answer: "To post a job: 1) Navigate to 'Post a Job' from the navigation menu, 2) Fill in job details including title, description, budget, location, and required skills, 3) Add photos if needed, 4) Select posting type (Individual, Company, or In Store), 5) Set urgency level and estimated duration, 6) Submit your job. Once posted, providers can view and apply to your job.",
-    relatedTopics: ["job details", "proposals", "manage jobs"]
+    answer: "To post a job: 1) Navigate to 'Post a Job' from the navigation menu, 2) Fill in job details including title, description, budget, location, and required skills, 3) Add photos if needed, 4) Select posting type (Individual, Company, or In Store), 5) Set urgency level and estimated duration, 6) Submit your job. Once posted, providers can view and apply to your job. You can also describe the job in ChatZing and post with AI after confirming details.",
+    answerFr: "Pour publier un emploi: 1) Allez à 'Publier un emploi', 2) Remplissez titre, description, budget, lieu et compétences, 3) Ajoutez des photos si besoin, 4) Choisissez le type d'annonceur, 5) Définissez l'urgence et la durée, 6) Soumettez. Vous pouvez aussi décrire l'emploi dans ChatZing et le publier avec l'IA après confirmation.",
+    relatedTopics: ["job details", "proposals", "chatzing"]
   },
   
   // Finding Jobs
@@ -273,11 +270,124 @@ export const knowledgeBase: KnowledgeEntry[] = [
   // Security
   {
     keywords: ["security", "safe", "secure", "privacy", "data protection"],
+    keywordsFr: ["sécurité", "sûr", "sécurisé", "confidentialité", "protection des données"],
     category: "Security",
     answer: "TaskZing prioritizes security: 1) Payments are processed securely through Stripe (we never store full card details), 2) All data is encrypted, 3) Real-time messaging is private, 4) Profile information is controlled by you, 5) You can deactivate your account anytime. Never share passwords. Report suspicious activity via Settings > Suggestions & Complaints.",
+    answerFr: "TaskZing priorise la sécurité: 1) Les paiements sont traités de manière sécurisée via Stripe, 2) Toutes les données sont chiffrées, 3) La messagerie en temps réel est privée, 4) Vous contrôlez les informations de votre profil, 5) Vous pouvez désactiver votre compte à tout moment.",
     relatedTopics: ["payment", "privacy", "account"]
+  },
+
+  // ChatZing AI
+  {
+    keywords: ["chatzing", "chat zing", "ai assistant", "ai help", "ask ai"],
+    keywordsFr: ["chatzing", "chat zing", "assistant ia", "aide ia"],
+    category: "ChatZing",
+    answer: "ChatZing is your TaskZing AI assistant. You can ask how the app works, describe a service you offer or need, get local demand insights, list nearby jobs and showcases, draft or post jobs from a short brief, generate shareable posters, and use voice or photos (speech-to-text and image understanding). Sign in and allow location for the best local results.",
+    answerFr: "ChatZing est votre assistant IA TaskZing. Vous pouvez poser des questions sur l'application, décrire un service que vous offrez ou recherchez, obtenir des informations sur la demande locale, voir les emplois et vitrines à proximité, publier des emplois à partir d'un bref descriptif, générer des affiches partageables, et utiliser la voix ou les photos.",
+    relatedTopics: ["poster", "local demand", "post job", "voice"]
+  },
+  {
+    keywords: ["poster", "generate poster", "create poster", "marketing poster", "flyer"],
+    keywordsFr: ["affiche", "générer une affiche", "créer une affiche", "flyer"],
+    category: "ChatZing",
+    answer: "In ChatZing, describe your service or product and ask for a poster. The AI can generate a PNG with your title, subtitle, call-to-action, and template (e.g. modern). You can save and share it to promote your work on TaskZing.",
+    answerFr: "Dans ChatZing, décrivez votre service ou produit et demandez une affiche. L'IA peut générer un PNG avec titre, sous-titre, appel à l'action et modèle. Enregistrez et partagez pour promouvoir votre travail sur TaskZing.",
+    relatedTopics: ["showcase", "chatzing"]
+  },
+  {
+    keywords: ["voice", "speech to text", "microphone", "dictate", "voice input"],
+    keywordsFr: ["voix", "parole en texte", "microphone", "dicter"],
+    category: "ChatZing",
+    answer: "Use the microphone button in ChatZing to record a voice note. Your speech is transcribed and sent to the assistant so you can post jobs, search, or ask questions hands-free.",
+    answerFr: "Utilisez le bouton microphone dans ChatZing pour enregistrer une note vocale. Votre parole est transcrite et envoyée à l'assistant pour publier des emplois, rechercher ou poser des questions.",
+    relatedTopics: ["chatzing", "post job"]
+  },
+  {
+    keywords: ["image", "photo", "picture", "image to text", "scan image", "upload photo"],
+    keywordsFr: ["image", "photo", "télécharger une photo", "analyser une image"],
+    category: "ChatZing",
+    answer: "Attach a photo in ChatZing to describe work samples, receipts, or listings. The assistant can read the image and answer questions about it (image-to-text / vision).",
+    answerFr: "Joignez une photo dans ChatZing pour décrire des exemples de travail ou des annonces. L'assistant peut lire l'image et répondre à vos questions.",
+    relatedTopics: ["showcase", "chatzing"]
+  },
+  {
+    keywords: ["local demand", "demand in my area", "trending", "saturation", "competition nearby", "how many offer"],
+    keywordsFr: ["demande locale", "tendance", "saturation", "concurrence", "combien offrent"],
+    category: "ChatZing",
+    answer: "Share your location in ChatZing and describe what you offer or need. The assistant compares open jobs and showcases near you and can report how crowded a niche is (e.g. how many similar providers or how often that type of job is posted nearby).",
+    answerFr: "Partagez votre position dans ChatZing et décrivez ce que vous offrez ou recherchez. L'assistant compare les emplois et vitrines à proximité et peut indiquer si un créneau est saturé ou en demande.",
+    relatedTopics: ["nearby jobs", "suggest niches"]
+  },
+  {
+    keywords: ["post job with ai", "ai post job", "create job from description", "brief job"],
+    keywordsFr: ["publier un emploi avec l'ia", "créer un emploi", "bref emploi"],
+    category: "ChatZing",
+    answer: "Tell ChatZing what you need done (title, budget, location, date, skills). It validates required fields, then can post the job to TaskZing when you confirm. You must be signed in as a client.",
+    answerFr: "Dites à ChatZing ce dont vous avez besoin (titre, budget, lieu, date, compétences). Il valide les champs requis, puis peut publier l'emploi sur TaskZing après votre confirmation. Vous devez être connecté en tant que client.",
+    relatedTopics: ["post job", "validate job"]
+  },
+  {
+    keywords: ["nearby jobs", "jobs near me", "local jobs", "open jobs near"],
+    keywordsFr: ["emplois à proximité", "emplois près de moi", "emplois locaux"],
+    category: "ChatZing",
+    answer: "Ask ChatZing to list nearby open jobs. With location enabled, it searches by your coordinates, optional category, keyword, and radius so providers can discover local opportunities quickly.",
+    answerFr: "Demandez à ChatZing de lister les emplois ouverts à proximité. Avec la localisation activée, il recherche par coordonnées, catégorie ou mot-clé.",
+    relatedTopics: ["find jobs", "local demand"]
+  },
+  {
+    keywords: ["nearby showcase", "showcases near me", "portfolio nearby", "local providers"],
+    keywordsFr: ["vitrines à proximité", "portfolio près de moi", "prestataires locaux"],
+    category: "ChatZing",
+    answer: "Ask ChatZing for showcases near you to discover local talent and services. Results use your location and optional keywords, similar to the Explore page but conversational.",
+    answerFr: "Demandez à ChatZing les vitrines près de chez vous pour découvrir des talents et services locaux.",
+    relatedTopics: ["explore page", "showcase"]
+  },
+  {
+    keywords: ["suggest niche", "what should i offer", "service ideas", "i am a tutor", "i sell"],
+    keywordsFr: ["suggérer un créneau", "que devrais-je offrir", "idées de service", "je suis tuteur", "je vends"],
+    category: "ChatZing",
+    answer: "Describe your skills or products (e.g. \"I'm a math tutor\" or \"I sell handmade candles\"). With location on, ChatZing suggests relevant local niches and demand based on nearby jobs and showcases.",
+    answerFr: "Décrivez vos compétences ou produits. Avec la localisation, ChatZing suggère des créneaux locaux pertinents selon les emplois et vitrines à proximité.",
+    relatedTopics: ["local demand", "poster"]
+  },
+  {
+    keywords: ["create showcase with ai", "ai showcase", "showcase from brief"],
+    keywordsFr: ["créer une vitrine avec l'ia", "vitrine ia"],
+    category: "ChatZing",
+    answer: "Providers can describe their work in ChatZing to get help drafting showcase copy and next steps. Full showcase creation still uses Showcase Work in the app; ChatZing guides you and can generate posters to promote it.",
+    answerFr: "Les prestataires peuvent décrire leur travail dans ChatZing pour obtenir de l'aide sur le texte de vitrine et les étapes suivantes. La création complète se fait via Vitrine dans l'application.",
+    relatedTopics: ["showcase", "poster"]
+  },
+  {
+    keywords: ["auto description", "write description for me", "only title", "short title", "expand my title"],
+    keywordsFr: ["description automatique", "rédiger la description", "titre seulement", "titre court"],
+    category: "ChatZing",
+    answer: "In ChatZing, you can send only a job or service title (e.g. \"House cleaning\"). The AI drafts a full professional description, category, and skills for you to review before posting.",
+    answerFr: "Dans ChatZing, envoyez seulement un titre d'emploi ou de service. L'IA rédige une description professionnelle complète à valider avant publication.",
+    relatedTopics: ["post job", "chatzing"]
+  },
+  {
+    keywords: ["confirm location", "use my location", "share gps", "current location permission"],
+    keywordsFr: ["confirmer la position", "utiliser ma position", "partager gps"],
+    category: "ChatZing",
+    answer: "ChatZing detects your device location but only sends coordinates to the AI after you tap \"Use my location\" or confirm in chat. This protects privacy while enabling nearby jobs and local demand tools.",
+    answerFr: "ChatZing détecte votre position mais ne l'envoie à l'IA qu'après votre confirmation via « Utiliser ma position » ou dans le chat.",
+    relatedTopics: ["nearby jobs", "local demand"]
   }
 ];
+
+/** Structured dataset for tooling, docs, or server sync (live answers come from the ChatZing API). */
+export function getKnowledgeDataset(): {
+  version: string;
+  entryCount: number;
+  entries: KnowledgeEntry[];
+} {
+  return {
+    version: "2.0.0",
+    entryCount: knowledgeBase.length,
+    entries: knowledgeBase,
+  };
+}
 
 // Function to find relevant answers based on user query
 export function findAnswer(query: string, language: "english" | "french" = "english"): KnowledgeEntry[] {

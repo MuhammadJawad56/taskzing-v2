@@ -26,6 +26,10 @@ const INTERNAL_PHRASE_PATTERNS: RegExp[] = [
   /\bcontext\.[a-z_]+\b/gi,
   /\blat\/lng\b/gi,
   /\bPOST\s+\/v1\/\S+/gi,
+  /\bset\s+openai_api_key\b/gi,
+  /\bOPENAI_API_KEY\b/g,
+  /\bfor smarter multi-step agent mode\b/gi,
+  /\bpour un mode agent multi-étapes\b/gi,
 ];
 
 function replaceIdentifier(text: string, id: string): string {

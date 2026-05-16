@@ -26,6 +26,16 @@ import {
   isIrrelevantImageReply,
 } from "@/lib/chatzing/imageAnalysis";
 import { sanitizeChatzingUserFacingText } from "@/lib/chatzing/sanitizeReply";
+import {
+  isPosterRequest,
+  parsePosterSpec,
+  tryGeneratePosterFromMessage,
+} from "@/lib/chatzing/posterIntent";
+import {
+  formatPosterGenerationFailed,
+  formatTopicMismatchReply,
+  isUnhelpfulChatzingReply,
+} from "@/lib/chatzing/replyQuality";
 import { prepareImageForChatzing } from "@/lib/chatzing/compressImage";
 import {
   buildAgentContextFromSession,
@@ -219,6 +229,23 @@ export default function ChatZingPage() {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
+      if (!options?.imageOnlyMode && isPosterRequest(textToSend)) {
+        const poster = await tryGeneratePosterFromMessage(textToSend, locale);
+        if (poster) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}`,
+              role: "assistant",
+              content: sanitizeChatzingUserFacingText(poster.message),
+              timestamp: new Date(),
+              images: [poster.imageDataUrl],
+            },
+          ]);
+          return;
+        }
+      }
+
       const prior = messagesRef.current
         .filter((m) => m.id !== "welcome-1")
         .map((m) => ({ role: m.role, content: m.content }));
@@ -239,7 +266,7 @@ export default function ChatZingPage() {
         context: buildAgentContextFromSession(session, attachment ?? pendingAttachment),
       });
 
-      const images = extractImagesFromChatResponse(res);
+      let images = extractImagesFromChatResponse(res);
       const actions: ChatMessageAction[] | undefined =
         !session.locationConfirmed &&
         pendingLocation &&
@@ -277,6 +304,21 @@ export default function ChatZingPage() {
           options.userQuestion ?? options.userDisplayContent ?? "",
           locale
         );
+      }
+
+      if (!options?.imageOnlyMode && isUnhelpfulChatzingReply(replyText)) {
+        if (isPosterRequest(textToSend)) {
+          const poster = await tryGeneratePosterFromMessage(textToSend, locale);
+          if (poster) {
+            replyText = poster.message;
+            images = [poster.imageDataUrl, ...images];
+          } else {
+            const spec = parsePosterSpec(textToSend, locale);
+            replyText = formatPosterGenerationFailed(locale, spec.title);
+          }
+        } else {
+          replyText = formatTopicMismatchReply(textToSend, locale);
+        }
       }
 
       const assistantMessage: ChatMessage = {

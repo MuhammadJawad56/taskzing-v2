@@ -30,6 +30,17 @@ const INTERNAL_PHRASE_PATTERNS: RegExp[] = [
   /\bOPENAI_API_KEY\b/g,
   /\bfor smarter multi-step agent mode\b/gi,
   /\bpour un mode agent multi-étapes\b/gi,
+  /\bvia the API\b/gi,
+  /\bvia l'API\b/gi,
+  /\bthrough the API\b/gi,
+  /\bpar l'API\b/gi,
+  /\busing the API\b/gi,
+  /\bI'll create it via\b/gi,
+  /\bI will create it via\b/gi,
+  /\bje (?:vais )?le créer via\b/gi,
+  /\bURLs or base64\b/gi,
+  /\bURL(?:s)? ou base64\b/gi,
+  /\bbase64\b/gi,
 ];
 
 function replaceIdentifier(text: string, id: string): string {
@@ -47,10 +58,27 @@ export function sanitizeChatzingUserFacingText(text: string): string {
     out = out.replace(re, "");
   }
   out = out
+    .replace(/\s*[—–-]\s*I(?:'ll| will) create it\.?/gi, ".")
+    .replace(/\s*[—–-]\s*je (?:vais )?le créer\.?/gi, ".")
     .replace(/\(\s*\)/g, "")
     .replace(/\s{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/^\s*[,;:]\s*/gm, "")
+    .replace(/\s+\./g, ".")
     .trim();
+
+  if (/share photos\s*[.—]?\s*$/i.test(out)) {
+    out = out.replace(/share photos\s*[.—]?\s*$/i, "upload photos in the TaskZing app.");
+  }
+
   return out || text.trim();
+}
+
+export function replyMentionsBackendLeak(text: string): boolean {
+  const t = text.toLowerCase();
+  return (
+    /\bbase64\b/.test(t) ||
+    /via the api|via l'api|through the api/.test(t) ||
+    /create_it_via|create it via/.test(t.replace(/\s/g, "_"))
+  );
 }

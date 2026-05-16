@@ -2,7 +2,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   ImagePlus,
   Mic,
-  LayoutTemplate,
   Briefcase,
   Grid3X3,
   TrendingUp,
@@ -13,7 +12,6 @@ import {
 export type ChatzingQuickActionId =
   | "image"
   | "voice"
-  | "poster"
   | "nearby_jobs"
   | "nearby_showcases"
   | "local_demand"
@@ -30,7 +28,6 @@ export type ChatzingQuickAction = {
 export const CHATZING_QUICK_ACTIONS: ChatzingQuickAction[] = [
   { id: "image", icon: ImagePlus, usesChat: false },
   { id: "voice", icon: Mic, usesChat: false },
-  { id: "poster", icon: LayoutTemplate, usesChat: true },
   { id: "nearby_jobs", icon: Briefcase, usesChat: true },
   { id: "nearby_showcases", icon: Grid3X3, usesChat: true },
   { id: "local_demand", icon: TrendingUp, usesChat: true },
@@ -41,8 +38,6 @@ export const CHATZING_QUICK_ACTIONS: ChatzingQuickAction[] = [
 /** Natural-language prompts sent to the API (no internal tool names). */
 const PROMPTS = {
   en: {
-    poster:
-      "Create a modern TaskZing marketing poster for my local service with a bold title, short subtitle, and professional visuals.",
     nearby_jobs:
       "Show me open jobs near my current location with titles, categories, and distance.",
     nearby_showcases:
@@ -52,11 +47,9 @@ const PROMPTS = {
     post_job:
       "Help me post a new job on TaskZing. If I only give a title or short phrase, draft a full professional description for me to review, then help with budget, address, date, and skills before posting.",
     help:
-      "Summarize what ChatZing can do on TaskZing: help, jobs, showcases, posters, voice, images, and local insights.",
+      "Summarize what ChatZing can do on TaskZing: help, jobs, showcases, voice, photo analysis, and local insights.",
   },
   fr: {
-    poster:
-      "Créez une affiche TaskZing moderne pour mon service local avec un titre accrocheur, un sous-titre court et un visuel professionnel.",
     nearby_jobs:
       "Montrez-moi les emplois ouverts près de ma position avec titres, catégories et distance.",
     nearby_showcases:
@@ -66,7 +59,7 @@ const PROMPTS = {
     post_job:
       "Aidez-moi à publier un emploi sur TaskZing. Si je ne donne qu'un titre ou une phrase courte, rédigez une description complète pour validation, puis budget, adresse, date et compétences avant publication.",
     help:
-      "Résumez ce que ChatZing peut faire sur TaskZing : aide, emplois, vitrines, affiches, voix, images et insights locaux.",
+      "Résumez ce que ChatZing peut faire sur TaskZing : aide, emplois, vitrines, voix, analyse de photos et insights locaux.",
   },
 } as const;
 
@@ -74,7 +67,6 @@ const LABELS = {
   en: {
     image: "Photo",
     voice: "Voice",
-    poster: "Poster",
     nearby_jobs: "Jobs nearby",
     nearby_showcases: "Showcases",
     local_demand: "Local demand",
@@ -84,7 +76,6 @@ const LABELS = {
   fr: {
     image: "Photo",
     voice: "Voix",
-    poster: "Affiche",
     nearby_jobs: "Emplois",
     nearby_showcases: "Vitrines",
     local_demand: "Demande locale",

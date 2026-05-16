@@ -25,17 +25,15 @@ import {
   isGenericCapabilitiesReply,
   isIrrelevantImageReply,
 } from "@/lib/chatzing/imageAnalysis";
-import { sanitizeChatzingUserFacingText } from "@/lib/chatzing/sanitizeReply";
 import {
-  generateVisualFromText,
-  getChatzingMediaCapabilities,
-  isVisualGenerationRequest,
-  parseVisualSpec,
-  tryGenerateVisualFromMessage,
-} from "@/lib/chatzing/imageGeneration";
+  replyMentionsBackendLeak,
+  sanitizeChatzingUserFacingText,
+} from "@/lib/chatzing/sanitizeReply";
 import {
-  formatPosterGenerationFailed,
+  formatImageGenerationDisabledReply,
+  formatShowcaseGuidanceReply,
   formatTopicMismatchReply,
+  isPosterCreationRequest,
   isUnhelpfulChatzingReply,
 } from "@/lib/chatzing/replyQuality";
 import { prepareImageForChatzing } from "@/lib/chatzing/compressImage";
@@ -108,8 +106,6 @@ export default function ChatZingPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
-  const [mediaInfoBanner, setMediaInfoBanner] = useState<string | null>(null);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -188,21 +184,8 @@ export default function ChatZingPage() {
 
   useEffect(() => {
     fetchPendingLocation();
-    if (user) {
-      chatzingPreload();
-      void getChatzingMediaCapabilities().then((caps) => {
-        if (!caps.aiIllustrationAvailable) {
-          setMediaInfoBanner(
-            isFr
-              ? "Affiche IA : le serveur ChatZing renvoie pour l’instant un modèle texte/couleurs seulement (pas d’illustration type « chien »). Activez OPENAI_API_KEY sur Railway pour le texte→image."
-              : "AI posters: ChatZing currently returns layout-only posters (text + colors), not illustrations like a dog. Enable OPENAI_API_KEY on Railway for text-to-image."
-          );
-        } else {
-          setMediaInfoBanner(null);
-        }
-      });
-    }
-  }, [fetchPendingLocation, user, isFr]);
+    if (user) chatzingPreload();
+  }, [fetchPendingLocation, user]);
 
   useEffect(() => {
     const welcomeMsg: ChatMessage = {
@@ -274,39 +257,20 @@ export default function ChatZingPage() {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      if (!options?.imageOnlyMode && isVisualGenerationRequest(textToSend)) {
-        try {
-          const visual = await generateVisualFromText(textToSend, locale);
-          setErrorBanner(null);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `assistant-${Date.now()}`,
-              role: "assistant",
-              content: sanitizeChatzingUserFacingText(visual.message),
-              timestamp: new Date(),
-              images: [visual.imageDataUrl],
-            },
-          ]);
-          return;
-        } catch (genErr) {
-          const spec = parseVisualSpec(textToSend, locale);
-          const failMsg =
-            genErr instanceof Error ? genErr.message : "Generation failed";
-          setErrorBanner(failMsg);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `assistant-${Date.now()}`,
-              role: "assistant",
-              content: sanitizeChatzingUserFacingText(
-                `${formatPosterGenerationFailed(locale, spec.title)}\n\n_${failMsg}_`
-              ),
-              timestamp: new Date(),
-            },
-          ]);
-          return;
-        }
+      if (!options?.imageOnlyMode && isPosterCreationRequest(textToSend)) {
+        setErrorBanner(null);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: "assistant",
+            content: sanitizeChatzingUserFacingText(
+              formatImageGenerationDisabledReply(locale)
+            ),
+            timestamp: new Date(),
+          },
+        ]);
+        return;
       }
 
       const prior = messagesRef.current
@@ -370,24 +334,34 @@ export default function ChatZingPage() {
       }
 
       if (!options?.imageOnlyMode && isUnhelpfulChatzingReply(replyText)) {
-        if (isVisualGenerationRequest(textToSend)) {
-          const visual = await tryGenerateVisualFromMessage(textToSend, locale);
-          if (visual) {
-            replyText = visual.message;
-            images = [visual.imageDataUrl, ...images];
-          } else {
-            const spec = parseVisualSpec(textToSend, locale);
-            replyText = formatPosterGenerationFailed(locale, spec.title);
-          }
-        } else {
-          replyText = formatTopicMismatchReply(textToSend, locale);
-        }
+        replyText = isPosterCreationRequest(textToSend)
+          ? formatImageGenerationDisabledReply(locale)
+          : formatTopicMismatchReply(textToSend, locale);
+      }
+
+      const rawReply = replyText;
+      const showcaseTopic =
+        /\bshowcase\b/i.test(textToSend) || /\bshowcase\b/i.test(rawReply);
+      const backendLeak =
+        /via the api|via l'api|base64|create it via|urls or base64/i.test(
+          rawReply.toLowerCase()
+        );
+
+      replyText = sanitizeChatzingUserFacingText(replyText);
+      if (!options?.imageOnlyMode && showcaseTopic && backendLeak) {
+        replyText = formatShowcaseGuidanceReply(locale);
+      } else if (replyMentionsBackendLeak(replyText)) {
+        replyText = sanitizeChatzingUserFacingText(rawReply.replace(
+          /\s*[—–-]?\s*I(?:'ll| will) create it via the API\.?/gi,
+          ""
+        ));
+        if (showcaseTopic) replyText = formatShowcaseGuidanceReply(locale);
       }
 
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: sanitizeChatzingUserFacingText(replyText),
+        content: replyText,
         timestamp: new Date(),
         images: images.length ? images : undefined,
         actions,
@@ -585,51 +559,6 @@ export default function ChatZingPage() {
     if (!prompt) return;
 
     const displayLabel = getQuickActionLabel(id, locale);
-
-    if (id === "poster") {
-      setIsTyping(true);
-      setErrorBanner(null);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `user-${Date.now()}`,
-          role: "user",
-          content: displayLabel,
-          timestamp: new Date(),
-        },
-      ]);
-      try {
-        const visual = await generateVisualFromText(prompt, locale);
-        setErrorBanner(null);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `assistant-${Date.now()}`,
-            role: "assistant",
-            content: sanitizeChatzingUserFacingText(visual.message),
-            timestamp: new Date(),
-            images: [visual.imageDataUrl],
-          },
-        ]);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Poster generation failed";
-        setErrorBanner(msg);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `assistant-${Date.now()}`,
-            role: "assistant",
-            content: sanitizeChatzingUserFacingText(
-              formatPosterGenerationFailed(locale, isFr ? "Mon service" : "My service")
-            ),
-            timestamp: new Date(),
-          },
-        ]);
-      } finally {
-        setIsTyping(false);
-      }
-      return;
-    }
 
     if (requiresLocationBeforeAction(id) && !locationConfirmed) {
       if (pendingLocation) {
@@ -829,12 +758,6 @@ export default function ChatZingPage() {
       {errorBanner && (
         <div className="mx-4 mt-2 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-300">
           {errorBanner}
-        </div>
-      )}
-
-      {mediaInfoBanner && !errorBanner && (
-        <div className="mx-4 mt-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
-          {mediaInfoBanner}
         </div>
       )}
 

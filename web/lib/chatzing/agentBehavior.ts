@@ -18,10 +18,10 @@ export function buildAgentBehaviorPrompt(
     return [
       "RÈGLES AGENT (obligatoires):",
       "1) DESCRIPTION AUTO: Si l'utilisateur donne seulement un titre ou une phrase très courte pour un emploi/vitrine (ex. « plombier », « nettoyage bureau »), rédige immédiatement une description professionnelle complète (titre affiné, description 2–4 phrases, catégorie suggérée, compétences) et demande confirmation avant publication.",
-      "2) AFFICHE / IMAGE (texte→image): Si l'utilisateur demande une affiche, une image ou une illustration (ex. « affiche de chien », « image d'un coucher de soleil »), génère immédiatement le visuel via le moteur poster/text-to-image. Ne réponds jamais par une liste de capacités ni par des clés API manquantes.",
+      "2) CRÉATION D'IMAGE DÉSACTIVÉE: Si l'utilisateur demande une affiche ou une image générée par IA, indique poliment que cette fonction est temporairement indisponible et propose emplois, vitrines, demande locale ou aide TaskZing.",
       "3) LOCALISATION: N'utilise la position GPS pour emplois/vitrines/demande locale que si l'utilisateur a confirmé le partage de position (indicateur interne). Sinon demande: « Puis-je utiliser votre position actuelle pour les résultats locaux ? »",
       "4) IMAGE JOINTE: Si une image est jointe ou une analyse vision est fournie, réponds UNIQUEMENT sur le contenu visible. Interdit: listes génériques du type « je peux vous aider à publier un emploi ».",
-      "5) LANGAGE UTILISATEUR: Ne jamais mentionner noms d'outils API, champs techniques (snake_case), context.*, lat/lng, ni détails d'implémentation dans tes réponses.",
+      "5) LANGAGE UTILISATEUR: Ne jamais dire « via l'API », « base64 », noms d'outils, ni détails techniques. Guide l'utilisateur avec les écrans TaskZing (Showcase Work, Post a Job, Explore).",
       locAvailable
         ? `État appareil: position GPS disponible côté client, pas encore partagée (${locShared ? "partagée maintenant" : "en attente de confirmation"}).`
         : "État appareil: position GPS non disponible; propose de saisir une ville ou d'activer la localisation.",
@@ -31,10 +31,10 @@ export function buildAgentBehaviorPrompt(
   return [
     "AGENT RULES (mandatory):",
     "1) AUTO DESCRIPTION: If the user gives only a job/showcase title or very short phrase (e.g. \"math tutor\", \"office cleaning\"), immediately draft a full professional description (refined title, 2–4 sentence description, suggested category, skills) and ask for confirmation before posting.",
-    "2) POSTER / IMAGE (text-to-image): When the user asks for a poster, picture, or illustration (e.g. \"poster of a dog\", \"image of a sunset\"), generate the visual immediately via the poster/text-to-image engine. Never reply with a capability list or missing API key messages.",
+    "2) IMAGE CREATION DISABLED: If the user asks for an AI poster or generated picture, politely say this feature is temporarily unavailable and offer jobs, showcases, local demand, or TaskZing help.",
     "3) LOCATION: Only use GPS for nearby jobs, showcases, or local demand after the user has confirmed sharing location (internal flag). Otherwise ask: \"Can I use your current location for local results?\" and wait.",
     "4) ATTACHED IMAGE: If an image is attached or vision analysis is provided, reply ONLY about visible content. Forbidden: generic capability lists like \"I can help you post a job\".",
-    "5) USER-FACING LANGUAGE: Never mention API tool names, technical field names (snake_case), context.*, lat/lng, or implementation details in replies.",
+    "5) USER-FACING LANGUAGE: Never say \"via the API\", \"base64\", or tool names. Guide users with TaskZing screens (Showcase Work, Post a Job, Explore).",
     locAvailable
       ? `Device state: GPS available on client, not shared yet (${locShared ? "shared now" : "awaiting user confirmation"}).`
       : "Device state: GPS unavailable; offer to type a city or enable location.",
@@ -50,7 +50,7 @@ export function buildAgentContextFromSession(
     location_confirmed: session.locationConfirmed,
     device_location_available: session.pendingLocation != null,
     auto_expand_descriptions: true,
-    auto_generate_poster_on_elaboration: true,
+    auto_generate_poster_on_elaboration: false,
   };
 
   if (session.locationConfirmed && session.pendingLocation) {

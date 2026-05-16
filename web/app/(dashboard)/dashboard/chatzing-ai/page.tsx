@@ -14,7 +14,15 @@ import {
   chatzingPreload,
   chatzingTranscribe,
   extractImagesFromChatResponse,
+  type ImageAnalysisResult,
 } from "@/lib/chatzing/api";
+import {
+  analyzeImageForChat,
+  buildImageEnrichedChatPrompt,
+  dataUrlToBlob,
+  formatVisionOnlyAssistantReply,
+  isGenericCapabilitiesReply,
+} from "@/lib/chatzing/imageAnalysis";
 import {
   buildAgentContextFromSession,
   isLocationAffirmation,
@@ -58,6 +66,7 @@ export default function ChatZingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const pendingImageFileRef = useRef<File | null>(null);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -140,7 +149,11 @@ export default function ChatZingPage() {
   const sendToChatZing = async (
     userText: string,
     attachment?: ChatAttachment | null,
-    sessionOverride?: Partial<AgentSessionState>
+    sessionOverride?: Partial<AgentSessionState>,
+    options?: {
+      userDisplayContent?: string;
+      visionAnalysis?: ImageAnalysisResult;
+    }
   ) => {
     if (!user) {
       setErrorBanner(isFr ? "Connectez-vous pour utiliser ChatZing." : "Please sign in to use ChatZing.");
@@ -176,8 +189,12 @@ export default function ChatZingPage() {
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
-      content: textToSend,
+      content: options?.userDisplayContent ?? textToSend,
       timestamp: new Date(),
+      images:
+        attachment?.type === "image" && imagePreview
+          ? [imagePreview]
+          : undefined,
     };
     setMessages((prev) => [...prev, userMessage]);
 
@@ -211,10 +228,21 @@ export default function ChatZingPage() {
             ]
           : undefined;
 
+      let replyText = res.message;
+      if (
+        options?.visionAnalysis &&
+        isGenericCapabilitiesReply(replyText)
+      ) {
+        replyText = formatVisionOnlyAssistantReply(
+          options.visionAnalysis,
+          locale
+        );
+      }
+
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: res.message,
+        content: replyText,
         timestamp: new Date(),
         images: images.length ? images : undefined,
         actions,
@@ -238,6 +266,7 @@ export default function ChatZingPage() {
       setIsTyping(false);
       setPendingAttachment(null);
       setImagePreview(null);
+      pendingImageFileRef.current = null;
     }
   };
 
@@ -275,6 +304,7 @@ export default function ChatZingPage() {
 
     try {
       const data = await blobToBase64(file);
+      pendingImageFileRef.current = file;
       setImagePreview(data);
       setPendingAttachment({
         type: "image",
@@ -287,20 +317,75 @@ export default function ChatZingPage() {
   };
 
   const sendImageMessage = async () => {
-    if (!pendingAttachment || pendingAttachment.type !== "image") return;
-    const question = inputValue.trim();
-    const prompt =
-      question ||
+    if (!pendingAttachment || pendingAttachment.type !== "image" || !imagePreview) {
+      return;
+    }
+    if (!user) {
+      setErrorBanner(isFr ? "Connectez-vous pour utiliser ChatZing." : "Please sign in to use ChatZing.");
+      return;
+    }
+
+    const question =
+      inputValue.trim() ||
+      pendingAttachment.question ||
       (isFr
-        ? "[Image jointe] Analyse cette image et dis-moi comment elle peut m'aider sur TaskZing."
-        : "[Image attached] Analyze this image and tell me how it can help me on TaskZing.");
+        ? "Décris cette image et comment elle peut m'aider sur TaskZing."
+        : "Describe this image and how it can help me on TaskZing.");
     setInputValue("");
-    await sendToChatZing(prompt, pendingAttachment);
+    setErrorBanner(null);
+    setIsTyping(true);
+
+    const userLabel = isFr ? `[Photo] ${question}` : `[Photo] ${question}`;
+
+    try {
+      const file =
+        pendingImageFileRef.current ?? dataUrlToBlob(pendingAttachment.data);
+
+      const analysis = await analyzeImageForChat({
+        file,
+        imageBase64: pendingAttachment.data,
+        question,
+        locale,
+      });
+
+      const enrichedPrompt = buildImageEnrichedChatPrompt(analysis, question, locale);
+
+      await sendToChatZing(enrichedPrompt, pendingAttachment, undefined, {
+        userDisplayContent: userLabel,
+        visionAnalysis: analysis,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Image analysis failed";
+      setErrorBanner(msg);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `user-img-${Date.now()}`,
+          role: "user",
+          content: userLabel,
+          timestamp: new Date(),
+          images: [imagePreview],
+        },
+        {
+          id: `assistant-img-err-${Date.now()}`,
+          role: "assistant",
+          content: isFr
+            ? `Impossible d'analyser l'image: ${msg}. Réessayez ou utilisez une autre photo.`
+            : `Could not analyze the image: ${msg}. Try again or use another photo.`,
+          timestamp: new Date(),
+        },
+      ]);
+      setIsTyping(false);
+      setPendingAttachment(null);
+      setImagePreview(null);
+      pendingImageFileRef.current = null;
+    }
   };
 
   const clearImageAttachment = () => {
     setPendingAttachment(null);
     setImagePreview(null);
+    pendingImageFileRef.current = null;
   };
 
   const handleQuickAction = async (id: ChatzingQuickActionId) => {

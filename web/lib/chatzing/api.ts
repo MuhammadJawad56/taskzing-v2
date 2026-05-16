@@ -110,7 +110,13 @@ export async function chatzingVision(
   question?: string
 ): Promise<VisionResponse> {
   const form = new FormData();
-  form.append("file", file, "upload.jpg");
+  const ext =
+    file.type === "image/png"
+      ? "png"
+      : file.type === "image/webp"
+        ? "webp"
+        : "jpg";
+  form.append("file", file, `upload.${ext}`);
   const q = question?.trim();
   const path = q
     ? `/v1/vision?question=${encodeURIComponent(q)}`
@@ -124,7 +130,83 @@ export async function chatzingVision(
   if (!res.ok || !data) {
     throw new Error(errorMessage(res, data));
   }
+  if (!data.answer && !data.caption) {
+    throw new Error("Vision returned no analysis.");
+  }
   return data;
+}
+
+export interface ImageAnalysisResult {
+  source: "vision" | "read_image";
+  caption: string;
+  answer: string;
+  engine?: string;
+  question: string;
+}
+
+export function normalizeImageBase64ForApi(data: string): string {
+  const t = data.trim();
+  const comma = t.indexOf(",");
+  if (t.startsWith("data:") && comma >= 0) {
+    return t.slice(comma + 1);
+  }
+  return t;
+}
+
+/** Agent tool: read_image (base64). */
+export async function chatzingReadImage(params: {
+  imageBase64: string;
+  question?: string;
+}): Promise<{
+  caption?: string;
+  answer?: string;
+  text?: string;
+  engine?: string;
+}> {
+  const res = await fetch(resolveChatzingRequestUrl("/v1/tools/invoke"), {
+    method: "POST",
+    headers: {
+      ...authHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: "read_image",
+      arguments: {
+        image_base64: normalizeImageBase64ForApi(params.imageBase64),
+        question: params.question?.trim() || undefined,
+      },
+    }),
+  });
+  const data = await parseJson<{
+    ok?: boolean;
+    result?: Record<string, unknown>;
+    detail?: unknown;
+  }>(res);
+  if (!res.ok) {
+    throw new Error(errorMessage(res, data));
+  }
+  const result = data?.result;
+  if (!result || typeof result !== "object") {
+    throw new Error("read_image returned no result.");
+  }
+  const caption = typeof result.caption === "string" ? result.caption : "";
+  const answer =
+    typeof result.answer === "string"
+      ? result.answer
+      : typeof result.text === "string"
+        ? result.text
+        : typeof result.description === "string"
+          ? result.description
+          : "";
+  if (!caption && !answer) {
+    throw new Error("read_image returned empty analysis.");
+  }
+  return {
+    caption,
+    answer,
+    text: answer,
+    engine: typeof result.engine === "string" ? result.engine : "read_image",
+  };
 }
 
 export async function chatzingGeneratePoster(

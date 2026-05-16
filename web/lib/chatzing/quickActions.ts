@@ -42,7 +42,7 @@ export const CHATZING_QUICK_ACTIONS: ChatzingQuickAction[] = [
 const PROMPTS = {
   en: {
     poster:
-      "I want a marketing poster for my TaskZing service. If I only give a short title, expand it into subtitle and copy, then create a modern poster for me.",
+      "Create a modern TaskZing marketing poster for my local service with a bold title, short subtitle, and professional visuals.",
     nearby_jobs:
       "Show me open jobs near my current location with titles, categories, and distance.",
     nearby_showcases:
@@ -56,7 +56,7 @@ const PROMPTS = {
   },
   fr: {
     poster:
-      "Je veux une affiche pour mon service TaskZing. Si je donne seulement un titre court, développez sous-titre et texte puis créez une affiche moderne.",
+      "Créez une affiche TaskZing moderne pour mon service local avec un titre accrocheur, un sous-titre court et un visuel professionnel.",
     nearby_jobs:
       "Montrez-moi les emplois ouverts près de ma position avec titres, catégories et distance.",
     nearby_showcases:

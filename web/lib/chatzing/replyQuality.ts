@@ -30,12 +30,12 @@ export function formatPosterGenerationFailed(locale: "en" | "fr", subject: strin
   if (locale === "fr") {
     return [
       `Je n'ai pas pu générer l'affiche pour « ${subject} » pour le moment.`,
-      "Réessayez dans un instant, ou précisez le titre et le sous-titre souhaités.",
+      "Réessayez avec une phrase comme : « affiche d'un chien » ou « poster of a dog ».",
     ].join("\n");
   }
   return [
     `I couldn't generate the "${subject}" poster right now.`,
-    "Please try again in a moment, or tell me the title and subtitle you'd like on it.",
+    'Try again with a phrase like "poster of a dog" or "create a dog poster".',
   ].join("\n");
 }
 

@@ -69,6 +69,15 @@ export interface PosterRequest {
   subtitle?: string;
   cta?: string;
   template_id?: string;
+  /** Text-to-image prompt (supported by ChatZing poster engine when configured). */
+  prompt?: string;
+  image_prompt?: string;
+}
+
+export interface ToolInvokeResponse {
+  ok?: boolean;
+  result?: Record<string, unknown>;
+  detail?: unknown;
 }
 
 export interface PosterResponse {

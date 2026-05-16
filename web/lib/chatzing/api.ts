@@ -8,6 +8,7 @@ import type {
   PosterRequest,
   PosterResponse,
   ToolCallRecord,
+  ToolInvokeResponse,
   TranscribeResponse,
   VisionResponse,
 } from "./types";
@@ -39,11 +40,85 @@ function errorMessage(res: Response, body: unknown): string {
       if (first.msg) return first.msg;
     }
     if (typeof o.message === "string") return o.message;
+    if (typeof o.error === "string") return o.error;
   }
   if (res.status === 401) {
     return "Please sign in to use ChatZing.";
   }
+  if (res.ok) {
+    return "The server responded OK but returned no usable image data.";
+  }
   return `ChatZing request failed (${res.status})`;
+}
+
+/** True when string is a non-empty image URL or data URL with real payload. */
+export function isValidImageDataUrl(url: string): boolean {
+  const t = url.trim();
+  if (!t) return false;
+  if (t.startsWith("http://") || t.startsWith("https://")) return true;
+  if (!t.startsWith("data:image/")) return false;
+  const comma = t.indexOf(",");
+  if (comma < 0) return false;
+  const payload = t.slice(comma + 1).replace(/\s/g, "");
+  return payload.length >= 200;
+}
+
+/** Normalize poster / tool JSON into a consistent shape. */
+export function normalizePosterResponse(data: unknown): PosterResponse | null {
+  if (!data || typeof data !== "object") return null;
+
+  const visit = (obj: Record<string, unknown>): PosterResponse | null => {
+    const b64 = pickString(obj, [
+      "image_base64",
+      "imageBase64",
+      "poster_base64",
+      "posterBase64",
+      "b64",
+      "image",
+    ]);
+    if (!b64) {
+      for (const key of ["result", "data", "output"]) {
+        const nested = obj[key];
+        if (nested && typeof nested === "object") {
+          const found = visit(nested as Record<string, unknown>);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+    const mime = pickString(obj, ["mime", "content_type", "contentType"]) || "image/png";
+    return {
+      image_base64: b64,
+      mime,
+      template_id: pickString(obj, ["template_id", "templateId"]) || "modern",
+      engine: pickString(obj, ["engine"]) || "poster",
+    };
+  };
+
+  return visit(data as Record<string, unknown>);
+}
+
+export interface ChatzingHealth {
+  status?: string;
+  openai_configured?: boolean;
+  database_configured?: boolean;
+  media?: {
+    whisper?: string;
+    vision?: string;
+    poster?: string;
+  };
+}
+
+export async function chatzingGetHealth(): Promise<ChatzingHealth> {
+  const res = await fetch(resolveChatzingRequestUrl("/health"), {
+    headers: authHeaders(),
+    cache: "no-store",
+  });
+  const data = await parseJson<ChatzingHealth>(res);
+  if (!res.ok || !data) {
+    throw new Error("ChatZing health check failed");
+  }
+  return data;
 }
 
 /** Warm up whisper / poster models on the ChatZing service. */
@@ -288,11 +363,123 @@ export async function chatzingGeneratePoster(
     },
     body: JSON.stringify(req),
   });
-  const data = await parseJson<PosterResponse>(res);
-  if (!res.ok || !data?.image_base64) {
+
+  const contentType = res.headers.get("content-type") ?? "";
+
+  if (contentType.includes("image/")) {
+    if (!res.ok) {
+      throw new Error(`Poster image request failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const dataUrl = await blobToBase64(blob);
+    if (!isValidImageDataUrl(dataUrl)) {
+      throw new Error("Poster API returned an empty image.");
+    }
+    return {
+      image_base64: dataUrl,
+      mime: contentType.split(";")[0] || "image/png",
+      template_id: req.template_id ?? "modern",
+      engine: "poster-binary",
+    };
+  }
+
+  const rawText = await res.text();
+  let data: unknown = null;
+  if (rawText.trim()) {
+    try {
+      data = JSON.parse(rawText) as unknown;
+    } catch {
+      if (!res.ok) {
+        throw new Error(errorMessage(res, null));
+      }
+      throw new Error("Poster API returned invalid JSON.");
+    }
+  }
+
+  if (!res.ok) {
     throw new Error(errorMessage(res, data));
   }
-  return data;
+
+  const parsed = normalizePosterResponse(data);
+  if (!parsed) {
+    throw new Error(errorMessage(res, data));
+  }
+
+  const dataUrl = posterResponseToDataUrl(parsed);
+  if (!isValidImageDataUrl(dataUrl)) {
+    throw new Error("Poster API returned an empty or invalid image.");
+  }
+
+  return parsed;
+}
+
+export async function chatzingInvokeTool(
+  name: string,
+  args: Record<string, unknown>
+): Promise<ToolInvokeResponse> {
+  const res = await fetch(resolveChatzingRequestUrl("/v1/tools/invoke"), {
+    method: "POST",
+    headers: {
+      ...authHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name, arguments: args }),
+  });
+  const data = await parseJson<ToolInvokeResponse>(res);
+  if (!res.ok) {
+    throw new Error(errorMessage(res, data));
+  }
+  if (data?.ok === false) {
+    const r = data.result;
+    const msg =
+      r && typeof r === "object"
+        ? pickString(r as Record<string, unknown>, ["error", "message", "detail"])
+        : "";
+    throw new Error(msg || `Tool ${name} failed`);
+  }
+  return data ?? {};
+}
+
+/** Pull base64 or URL image from a tool invoke or nested result. */
+export function extractImageFromToolResult(
+  payload: Record<string, unknown> | null | undefined
+): string | null {
+  if (!payload || typeof payload !== "object") return null;
+
+  const visit = (obj: Record<string, unknown>): string | null => {
+    for (const key of ["image_base64", "poster_base64", "image_url", "url"]) {
+      const v = obj[key];
+      if (typeof v === "string" && v.trim()) {
+        if (v.startsWith("http://") || v.startsWith("https://") || v.startsWith("data:")) {
+          return v;
+        }
+        const mime =
+          typeof obj.mime === "string" && obj.mime ? obj.mime : "image/png";
+        return `data:${mime};base64,${v}`;
+      }
+    }
+    for (const nested of ["result", "data", "output"]) {
+      const child = obj[nested];
+      if (child && typeof child === "object") {
+        const found = visit(child as Record<string, unknown>);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const root = payload.result && typeof payload.result === "object"
+    ? (payload.result as Record<string, unknown>)
+    : payload;
+
+  return visit(root);
+}
+
+export function posterResponseToDataUrl(res: PosterResponse): string {
+  const mime = res.mime ?? "image/png";
+  const b64 = res.image_base64;
+  if (b64.startsWith("data:")) return b64;
+  return `data:${mime};base64,${b64}`;
 }
 
 export function blobToBase64(blob: Blob): Promise<string> {

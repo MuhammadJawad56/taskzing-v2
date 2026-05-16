@@ -22,6 +22,7 @@ import {
   googleJobMarkerIcon,
   googleShowcaseMarkerIcon,
 } from "@/lib/map/mapMarkerIcons";
+import { taskzingGoogleMapsLoaderConfig } from "@/lib/map/googleMapsLoader";
 
 export type ShowcaseMapPoint = {
   item: ShowcaseItem;
@@ -117,10 +118,7 @@ export function GoogleMapsStack({
   onRadiusChange,
 }: GoogleMapsStackProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: "taskzing-google-maps",
-    googleMapsApiKey: apiKey,
-  });
+  const { isLoaded, loadError } = useJsApiLoader(taskzingGoogleMapsLoaderConfig(apiKey));
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const hasInitialFit = useRef(false);

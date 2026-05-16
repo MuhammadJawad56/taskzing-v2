@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation";
 import { Camera, X, MapPin, Map as MapIcon, Plus, Trash2, FileText } from "lucide-react";
 import { Circle, GoogleMap, Marker, useJsApiLoader, useGoogleMap } from "@react-google-maps/api";
+import { taskzingGoogleMapsLoaderConfig } from "@/lib/map/googleMapsLoader";
 import { FlutterMapControls } from "@/components/map/FlutterMapControls";
 import { GoogleMapPanTo } from "@/components/map/GoogleMapPanTo";
 import { LocationPickerFooter } from "@/components/map/LocationPickerFooter";
@@ -237,10 +238,7 @@ export default function ShowcasePage() {
   const {
     isLoaded: isLocationMapLoaded,
     loadError: locationMapLoadError,
-  } = useJsApiLoader({
-    id: "taskzing-showcase-location-picker",
-    googleMapsApiKey,
-  });
+  } = useJsApiLoader(taskzingGoogleMapsLoaderConfig(googleMapsApiKey));
 
   const hasTypedSomethingInShowcaseForm = useMemo(() => {
     const ne = (s: string) => s.trim().length > 0;

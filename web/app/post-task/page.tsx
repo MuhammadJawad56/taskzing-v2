@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, MapPin, Plus, Camera, X, Clock, ChevronDown, Keyboard, Edit, ChevronLeft, ChevronRight, AlertCircle, Info, Map as MapIcon } from "lucide-react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { taskzingGoogleMapsLoaderConfig } from "@/lib/map/googleMapsLoader";
 import { FlutterMapControls } from "@/components/map/FlutterMapControls";
 import { GoogleMapPanTo } from "@/components/map/GoogleMapPanTo";
 import { LocationPickerFooter } from "@/components/map/LocationPickerFooter";
@@ -184,10 +185,7 @@ export default function PostTaskPage() {
   const {
     isLoaded: isPostJobLocationMapLoaded,
     loadError: postJobLocationMapLoadError,
-  } = useJsApiLoader({
-    id: "taskzing-post-job-location-picker",
-    googleMapsApiKey,
-  });
+  } = useJsApiLoader(taskzingGoogleMapsLoaderConfig(googleMapsApiKey));
   const [showSkillSuggestions, setShowSkillSuggestions] = useState(false);
   const [showTitleSuggestions, setShowTitleSuggestions] = useState(false);
   const [categoryRows, setCategoryRows] = useState<Category[]>([]);

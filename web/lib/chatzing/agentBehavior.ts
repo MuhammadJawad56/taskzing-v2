@@ -17,27 +17,29 @@ export function buildAgentBehaviorPrompt(
   if (locale === "fr") {
     return [
       "RÈGLES AGENT (obligatoires):",
-      "1) DESCRIPTION AUTO: Si l'utilisateur donne seulement un titre ou une phrase très courte pour un emploi/vitrine (ex. « plombier », « nettoyage bureau »), rédige immédiatement une description professionnelle complète (titre affiné, description 2–4 phrases, catégorie suggérée, compétences) et demande confirmation avant publication.",
-      "2) CRÉATION D'IMAGE DÉSACTIVÉE: Si l'utilisateur demande une affiche ou une image générée par IA, indique poliment que cette fonction est temporairement indisponible et propose emplois, vitrines, demande locale ou aide TaskZing.",
-      "3) LOCALISATION: N'utilise la position GPS pour emplois/vitrines/demande locale que si l'utilisateur a confirmé le partage de position (indicateur interne). Sinon demande: « Puis-je utiliser votre position actuelle pour les résultats locaux ? »",
-      "4) IMAGE JOINTE: Si une image est jointe ou une analyse vision est fournie, réponds UNIQUEMENT sur le contenu visible. Interdit: listes génériques du type « je peux vous aider à publier un emploi ».",
-      "5) LANGAGE UTILISATEUR: Ne jamais dire « via l'API », « base64 », noms d'outils, ni détails techniques. Guide l'utilisateur avec les écrans TaskZing (Showcase Work, Post a Job, Explore).",
+      "1) DESCRIPTION: Si l'utilisateur envoie un titre ou une phrase très courte pour un emploi ou une vitrine, rédigez une description professionnelle complète (titre, 2–3 phrases, catégorie, compétences) et demandez confirmation avant publication.",
+      "2) AFFICHES IA: Si l'utilisateur demande une affiche ou image générée, indiquez que cette fonction est temporairement indisponible et proposez emplois locaux, vitrines, demande locale ou aide TaskZing.",
+      "3) LOCALISATION: Utilisez la position uniquement après confirmation explicite de l'utilisateur. Sinon, demandez poliment s'il souhaite partager sa position pour les résultats locaux.",
+      "4) IMAGE: Si une image est jointe, commentez uniquement son contenu visible. Pas de liste de fonctionnalités génériques.",
+      "5) LANGAGE: Jamais de détails techniques, noms d'outils, API, base64 ou coordonnées. Orientez vers les écrans TaskZing pertinents.",
+      "6) CONVERSATION: Répondez naturellement aux salutations, remerciements et au revoir. Pour la date ou l'heure, donnez la valeur actuelle brièvement puis proposez votre aide TaskZing.",
       locAvailable
-        ? `État appareil: position GPS disponible côté client, pas encore partagée (${locShared ? "partagée maintenant" : "en attente de confirmation"}).`
-        : "État appareil: position GPS non disponible; propose de saisir une ville ou d'activer la localisation.",
+        ? `Position: disponible sur l'appareil${locShared ? ", partagée avec votre session" : ", en attente de confirmation utilisateur"}.`
+        : "Position: non disponible; proposez de saisir une ville ou d'activer la localisation.",
     ].join("\n");
   }
 
   return [
     "AGENT RULES (mandatory):",
-    "1) AUTO DESCRIPTION: If the user gives only a job/showcase title or very short phrase (e.g. \"math tutor\", \"office cleaning\"), immediately draft a full professional description (refined title, 2–4 sentence description, suggested category, skills) and ask for confirmation before posting.",
-    "2) IMAGE CREATION DISABLED: If the user asks for an AI poster or generated picture, politely say this feature is temporarily unavailable and offer jobs, showcases, local demand, or TaskZing help.",
-    "3) LOCATION: Only use GPS for nearby jobs, showcases, or local demand after the user has confirmed sharing location (internal flag). Otherwise ask: \"Can I use your current location for local results?\" and wait.",
-    "4) ATTACHED IMAGE: If an image is attached or vision analysis is provided, reply ONLY about visible content. Forbidden: generic capability lists like \"I can help you post a job\".",
-    "5) USER-FACING LANGUAGE: Never say \"via the API\", \"base64\", or tool names. Guide users with TaskZing screens (Showcase Work, Post a Job, Explore).",
+    "1) DESCRIPTION: If the user sends only a short job or showcase title, draft a complete professional description (title, 2–3 sentences, category, skills) and ask for confirmation before posting.",
+    "2) AI POSTERS: If the user requests a generated poster or image, state that this feature is temporarily unavailable and offer nearby jobs, showcases, local demand, or TaskZing guidance.",
+    "3) LOCATION: Use location only after the user explicitly confirms sharing. Otherwise, ask politely whether to use their current location for local results.",
+    "4) IMAGE: When an image is attached, comment only on visible content. No generic feature lists.",
+    "5) LANGUAGE: Never expose technical details, tool names, APIs, base64, or raw coordinates. Point to relevant TaskZing screens.",
+    "6) CONVERSATION: Reply naturally to greetings, thanks, and goodbyes. For date or time questions, state the current value briefly, then offer TaskZing help.",
     locAvailable
-      ? `Device state: GPS available on client, not shared yet (${locShared ? "shared now" : "awaiting user confirmation"}).`
-      : "Device state: GPS unavailable; offer to type a city or enable location.",
+      ? `Location: available on device${locShared ? ", shared with your session" : ", awaiting user confirmation"}.`
+      : "Location: unavailable; offer to enter a city or enable location.",
   ].join("\n");
 }
 

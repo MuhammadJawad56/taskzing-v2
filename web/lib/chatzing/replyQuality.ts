@@ -1,7 +1,15 @@
 import { isGenericCapabilitiesReply } from "./imageAnalysis";
+import { isConversationalUserMessage } from "./localIntents";
 
 /** Backend stub when the agent is not fully configured — not user-appropriate. */
-export function isUnhelpfulChatzingReply(text: string): boolean {
+export function isUnhelpfulChatzingReply(
+  text: string,
+  userText?: string,
+  locale: "en" | "fr" = "en"
+): boolean {
+  if (userText && isConversationalUserMessage(userText, locale)) {
+    return false;
+  }
   if (isGenericCapabilitiesReply(text)) return true;
 
   const t = text.toLowerCase();
@@ -46,51 +54,24 @@ export function isPosterCreationRequest(text: string): boolean {
 
 export function formatImageGenerationDisabledReply(locale: "en" | "fr"): string {
   if (locale === "fr") {
-    return [
-      "La création d'affiches et d'images par IA est temporairement désactivée.",
-      "Je peux vous aider avec les **emplois à proximité**, les **vitrines**, la **demande locale**, publier un emploi, ou répondre à vos questions sur TaskZing.",
-    ].join("\n\n");
+    return "La génération d'affiches par IA n'est pas disponible pour le moment. Je peux vous aider à publier un emploi, consulter la demande locale ou explorer les vitrines et emplois à proximité.";
   }
-  return [
-    "AI poster and image creation is temporarily disabled.",
-    "I can help with **nearby jobs**, **showcases**, **local demand**, posting a job, or answering TaskZing questions.",
-  ].join("\n\n");
+  return "AI poster generation is not available at the moment. I can help you post a job, review local demand, or explore nearby showcases and jobs.";
 }
 
 export function formatShowcaseGuidanceReply(locale: "en" | "fr"): string {
   if (locale === "fr") {
-    return [
-      "Une vitrine met en valeur votre travail sur TaskZing.",
-      "Dans l'application : **Showcase Work** → **Add New Showcase**, puis ajoutez un titre, une description (50 caractères minimum), un lieu, au moins **3 photos**, et vos compétences.",
-      "Décrivez ce que vous offrez ici — je peux vous aider à rédiger le texte avant de publier.",
-    ].join("\n\n");
+    return "Pour créer une vitrine, ouvrez **Vitrine** dans l'application, puis ajoutez un titre, une description (50 caractères minimum), un lieu, au moins trois photos et vos compétences. Indiquez votre offre ici si vous souhaitez de l'aide pour le texte.";
   }
-  return [
-    "A showcase highlights your work on TaskZing.",
-    "In the app: open **Showcase Work** → **Add New Showcase**, then add a title, description (at least 50 characters), location, at least **3 photos**, and your skills.",
-    "Tell me what you offer — I can help you draft the wording before you publish.",
-  ].join("\n\n");
+  return "To create a showcase, open **Showcase Work** in the app and add a title, description (at least 50 characters), location, at least three photos, and your skills. Share what you offer here if you would like help drafting the copy.";
 }
 
 export function formatTopicMismatchReply(
-  userText: string,
+  _userText: string,
   locale: "en" | "fr"
 ): string {
-  const q = userText.trim().slice(0, 120);
   if (locale === "fr") {
-    return [
-      "Je n'ai pas une bonne réponse pour cela tout de suite.",
-      q ? `Vous avez demandé : « ${q} ».` : "",
-      "Essayez **Emplois** pour les offres près de vous, **Vitrines**, ou décrivez votre besoin en une phrase.",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    return "Je ne peux pas répondre précisément à cette demande. Reformulez votre besoin lié à TaskZing (emploi, vitrine, demande locale ou utilisation de l'application) et je vous guiderai.";
   }
-  return [
-    "I don't have a good answer for that right now.",
-    q ? `You asked: "${q}"` : "",
-    "Try **Jobs nearby** for local listings, **Showcases**, or describe what you need in one sentence.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return "I cannot answer that request precisely. Rephrase your TaskZing-related need (job, showcase, local demand, or how to use the app) and I will guide you.";
 }

@@ -1,7 +1,3 @@
-/**
- * TaskZing knowledge dataset for ChatZing API.
- * Injected as a system message on each chat (API has no separate upload endpoint).
- */
 
 import {
   knowledgeBase,
@@ -9,11 +5,11 @@ import {
   getKnowledgeDataset as getBaseDataset,
 } from "./knowledgeBase";
 import { buildAgentBehaviorPrompt, type AgentSessionState } from "./agentBehavior";
+import { buildProfessionalStylePrompt } from "./responseStyle";
 import type { ApiChatMessage } from "./types";
 
 export const CHATZING_DATASET_VERSION = "2.1.0";
 
-/** Additional entries beyond knowledgeBase.ts */
 export const extraKnowledgeEntries: KnowledgeEntry[] = [
   {
     keywords: ["sign up", "signup", "register", "create account", "join taskzing"],
@@ -259,8 +255,8 @@ const SYSTEM_PROMPT_MAX = 14_000;
 export function buildKnowledgeSystemPrompt(locale: "en" | "fr"): string {
   const intro =
     locale === "fr"
-      ? `Tu es ChatZing, l'assistant officiel TaskZing. Réponds dans la langue de l'utilisateur. Pour « comment utiliser TaskZing », utilise la base ci-dessous. Pour emplois, vitrines, affiches et demande locale en direct, utilise les outils internes disponibles — sans jamais citer leurs noms techniques à l'utilisateur.`
-      : `You are ChatZing, the official TaskZing assistant. Reply in the user's language. For "how to use TaskZing" questions, use the knowledge base below. For live jobs, showcases, posters, and local demand, use the internal tools available — never quote their technical names to the user.`;
+      ? `Tu es ChatZing, l'assistant officiel TaskZing. Réponds dans la langue de l'utilisateur. Utilise la base de connaissances ci-dessous comme référence — reformule en réponses courtes et professionnelles, sans copier des listes longues ni donner d'exemples fictifs.`
+      : `You are ChatZing, the official TaskZing assistant. Reply in the user's language. Use the knowledge base below as reference — rewrite answers in short, professional prose. Do not copy long lists or invent sample phrases.`;
 
   const lines: string[] = [intro, "", "TASKZING_KNOWLEDGE_BASE:"];
   for (const entry of getAllKnowledgeEntries()) {
@@ -292,7 +288,8 @@ function buildFullSystemPrompt(
     locationConfirmed: session?.locationConfirmed ?? false,
     pendingLocation: session?.pendingLocation ?? null,
   });
-  return `${knowledge}\n\n${behavior}`;
+  const style = buildProfessionalStylePrompt(locale);
+  return `${knowledge}\n\n${style}\n\n${behavior}`;
 }
 
 /** Build API messages with dataset + agent behavior + conversation history. */
@@ -324,20 +321,18 @@ export function buildImageFocusedChatMessages(
   const q = userQuestion.trim();
   const system =
     locale === "fr"
-      ? `Tu es ChatZing, assistant TaskZing. L'utilisateur a joint une IMAGE (context.attachments).
+      ? `Tu es ChatZing, assistant TaskZing. L'utilisateur a joint une image.
 
-RÈGLES STRICTES:
-1) Analyse l'image jointe avant de répondre.
-2) Décris ce qui est VISIBLE: titres, boutons, menus, textes à l'écran (ex. « Nearest Jobs », « See more »).
-3) Réponds UNIQUEMENT à la question sur CETTE image.
-INTERDIT: messagerie générique, paiements, paramètres, noms d'outils API, ou listes de capacités non liées à l'image.`
-      : `You are ChatZing, the TaskZing assistant. The user attached an IMAGE.
+RÈGLES:
+1) Décrivez uniquement ce qui est visible à l'écran (textes, boutons, sections).
+2) Répondez à la question de l'utilisateur sur cette image, en 2 à 4 phrases professionnelles.
+3) Interdit: listes de capacités, détails techniques, exemples fictifs, API ou outils internes.`
+      : `You are ChatZing, the TaskZing assistant. The user attached an image.
 
-STRICT RULES:
-1) Analyze the attached image before answering.
-2) Describe what is VISIBLE: headings, buttons, menus, on-screen text (e.g. "Nearest Jobs", "See more").
-3) Answer ONLY the user's question about THIS image.
-FORBIDDEN: generic messaging, payments, settings, API tool names, or capability lists unrelated to the image.`;
+RULES:
+1) Describe only what is visible on screen (text, buttons, sections).
+2) Answer the user's question about this image in 2–4 professional sentences.
+3) Forbidden: capability lists, technical details, sample phrases, APIs, or internal tools.`;
 
   const slimHistory = history
     .filter((m) => !m.content.startsWith("[Photo") && !m.content.startsWith("[Image"))

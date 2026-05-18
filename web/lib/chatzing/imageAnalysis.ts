@@ -170,8 +170,10 @@ export function isGenericCapabilitiesReply(text: string): boolean {
   return (
     (t.includes("i can help you") && t.includes("post a job")) ||
     (t.includes("je peux vous aider") && t.includes("publier")) ||
-    /try:\s*['"]post a tutoring job/i.test(text) ||
-    /essayez:\s*['"]publier un emploi/i.test(text) ||
+    /\btry:\s/i.test(text) ||
+    /\bessayez:\s/i.test(text) ||
+    /\bfor example\b/i.test(text) ||
+    /\bpar exemple\b/i.test(text) ||
     (t.includes("in-app messaging") && t.includes("discuss")) ||
     (t.includes("messagerie") && t.includes("discuter"))
   );
@@ -212,29 +214,15 @@ export function formatVisionOnlyAssistantReply(
   analysis: ImageAnalysisResult,
   locale: "en" | "fr"
 ): string {
+  const detail = [analysis.caption, analysis.answer].filter(Boolean).join(" ").trim();
   if (locale === "fr") {
-    return [
-      "Voici ce que je vois dans votre image :",
-      "",
-      analysis.caption ? `**À l'écran:** ${analysis.caption}` : "",
-      `**Détails:** ${analysis.answer}`,
-      "",
-      "_Dites-moi si vous voulez de l'aide pour cette section sur TaskZing._",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    return detail
+      ? `D'après l'image : ${detail}`
+      : "Je n'ai pas pu extraire de détail utile de cette image. Décrivez ce que vous souhaitez savoir.";
   }
-
-  return [
-    "Here's what I see in your image:",
-    "",
-    analysis.caption ? `**On screen:** ${analysis.caption}` : "",
-    `**Details:** ${analysis.answer}`,
-    "",
-    "_Tell me if you want help with this section on TaskZing._",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return detail
+    ? `From the image: ${detail}`
+    : "I could not extract useful detail from this image. Tell me what you would like to know.";
 }
 
 export function formatImageReplyUnavailable(
@@ -243,20 +231,11 @@ export function formatImageReplyUnavailable(
 ): string {
   const q = userQuestion.trim();
   if (locale === "fr") {
-    return [
-      "Je n'ai pas pu analyser l'image sur le serveur (vision indisponible).",
-      "",
-      q
-        ? `Pour vous aider sur « ${q} », décrivez en une phrase ce que montre la capture (ex. section « Nearest Jobs », bouton « See more »).`
-        : "Décrivez en une phrase ce que montre la capture (titres, boutons visibles).",
-    ].join("\n");
+    return q
+      ? `Je n'ai pas pu analyser cette image. Pour « ${q} », indiquez brièvement ce qui apparaît à l'écran (titres ou boutons visibles).`
+      : "Je n'ai pas pu analyser cette image. Décrivez brièvement ce qui apparaît à l'écran.";
   }
-
-  return [
-    "I couldn't analyze the image on the server (vision unavailable).",
-    "",
-    q
-      ? `To help with "${q}", describe in one sentence what the screenshot shows (e.g. "Nearest Jobs" section, "See more" link).`
-      : 'Describe in one sentence what the screenshot shows (visible headings, buttons).',
-  ].join("\n");
+  return q
+    ? `I could not analyze this image. For "${q}", briefly describe what appears on screen (visible headings or buttons).`
+    : "I could not analyze this image. Briefly describe what appears on screen.";
 }

@@ -13,6 +13,8 @@ import {
   Check,
   Users,
   MapPin,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/lib/api/AuthContext";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
@@ -275,6 +277,17 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
     await loadInitial(null);
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [loadInitial]);
+
+  const scrollToReelIndex = useCallback((index: number) => {
+    const el = scrollRef.current;
+    if (!el || reels.length === 0) return;
+    const next = Math.min(reels.length - 1, Math.max(0, index));
+    el.scrollTo({ top: next * el.clientHeight, behavior: "smooth" });
+    setActiveIndex(next);
+  }, [reels.length]);
+
+  const scrollToPreviousReel = () => scrollToReelIndex(activeIndex - 1);
+  const scrollToNextReel = () => scrollToReelIndex(activeIndex + 1);
 
   const handleVideoTap = (index: number) => {
     const now = Date.now();

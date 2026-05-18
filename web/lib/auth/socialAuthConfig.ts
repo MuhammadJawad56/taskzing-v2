@@ -14,11 +14,16 @@ export const APPLE_SERVICES_ID_FALLBACK = "com.taskzing.zingte.webauth";
  */
 export const GOOGLE_WEB_AUTHORIZED_ORIGINS = [
   "http://localhost:3000",
+  "http://127.0.0.1:3000",
   "http://localhost:3001",
+  "http://127.0.0.1:3001",
   "https://taskzing.com",
   "https://www.taskzing.com",
   "https://task-zing-m-v-p-e11l44.firebaseapp.com",
 ] as const;
+
+/** Apple Services ID return URLs (must match Apple Developer → Sign in with Apple). */
+export const APPLE_WEB_RETURN_PATHS = ["/login", "/signup"] as const;
 
 export function getGoogleWebClientId(): string {
   const fromEnv = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim();

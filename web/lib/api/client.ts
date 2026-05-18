@@ -322,10 +322,20 @@ class ApiClient {
   /**
    * Auth: Sign in with Google
    */
-  async signInWithGoogle(idToken: string): Promise<ApiResponse<AuthResponse>> {
+  async signInWithGoogle(
+    idToken: string,
+    accessToken?: string
+  ): Promise<ApiResponse<AuthResponse>> {
+    const access = (accessToken || idToken).trim();
+    const id = idToken.trim();
     const response = await this.request<AuthResponse>("/auth/google", {
       method: "POST",
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({
+        idToken: id,
+        accessToken: access,
+        id_token: id,
+        access_token: access,
+      }),
     });
 
     if (response.data?.token) {
@@ -338,10 +348,42 @@ class ApiClient {
   /**
    * Auth: Sign in with Apple
    */
-  async signInWithApple(idToken: string): Promise<ApiResponse<AuthResponse>> {
+  async signInWithApple(
+    identityToken: string,
+    authorizationCode: string,
+    extras?: {
+      user?: string;
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+      rawNonce?: string;
+    }
+  ): Promise<ApiResponse<AuthResponse>> {
+    const body: Record<string, unknown> = {
+      identityToken,
+      authorizationCode,
+      identity_token: identityToken,
+      authorization_code: authorizationCode,
+    };
+    if (extras?.user) body.user = extras.user;
+    if (extras?.email) body.email = extras.email;
+    if (extras?.firstName) {
+      body.firstName = extras.firstName;
+      body.first_name = extras.firstName;
+    }
+    if (extras?.lastName) {
+      body.lastName = extras.lastName;
+      body.last_name = extras.lastName;
+    }
+    if (extras?.rawNonce) {
+      body.nonce = extras.rawNonce;
+      body.rawNonce = extras.rawNonce;
+      body.raw_nonce = extras.rawNonce;
+    }
+
     const response = await this.request<AuthResponse>("/auth/apple", {
       method: "POST",
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify(body),
     });
 
     if (response.data?.token) {

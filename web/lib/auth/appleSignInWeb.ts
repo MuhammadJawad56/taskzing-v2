@@ -5,6 +5,8 @@ import { APPLE_SERVICES_ID_FALLBACK } from "@/lib/auth/socialAuthConfig";
 export type AppleWebCredentials = {
   identityToken: string;
   authorizationCode: string;
+  /** Raw nonce sent to backend (Flutter `toAppleLoginJson`); hashed form goes to Apple JS. */
+  rawNonce: string;
   user?: string;
   email?: string;
   firstName?: string;
@@ -69,10 +71,32 @@ function flattenRecord(raw: unknown): Record<string, unknown> {
   return o;
 }
 
+/** Apple JS on web must return to this site (login/signup), not the backend OAuth callback. */
+export function resolveAppleWebRedirectUri(apiRedirect?: string): string {
+  if (typeof window === "undefined") return "https://taskzing.com/login";
+  const origin = window.location.origin;
+  const path = window.location.pathname === "/signup" ? "/signup" : "/login";
+  const webRedirect = `${origin}${path}`;
+
+  if (!apiRedirect?.trim()) return webRedirect;
+
+  try {
+    const u = new URL(apiRedirect.trim());
+    const host = u.hostname.toLowerCase();
+    const isBackendCallback =
+      host.includes("railway.app") ||
+      host.includes("taskzing-backend") ||
+      u.pathname.includes("/auth/apple/callback");
+    if (isBackendCallback) return webRedirect;
+    if (u.origin === origin) return u.toString();
+  } catch {
+    // ignore malformed URL
+  }
+  return webRedirect;
+}
+
 async function fetchAppleWebConfig(): Promise<{ clientId: string; redirectUri: string }> {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "https://taskzing.com";
-  const fallbackRedirect = `${origin}/login`;
+  const webRedirect = resolveAppleWebRedirectUri();
 
   const res = await apiFetchJson<unknown>("/auth/apple/web-config", {
     method: "GET",
@@ -82,7 +106,7 @@ async function fetchAppleWebConfig(): Promise<{ clientId: string; redirectUri: s
   if (!res.ok) {
     return {
       clientId: APPLE_SERVICES_ID_FALLBACK,
-      redirectUri: fallbackRedirect,
+      redirectUri: webRedirect,
     };
   }
 
@@ -90,13 +114,13 @@ async function fetchAppleWebConfig(): Promise<{ clientId: string; redirectUri: s
   const clientId = String(
     o.clientId ?? o.servicesId ?? o.client_id ?? o.services_id ?? APPLE_SERVICES_ID_FALLBACK
   ).trim();
-  const redirectUri = String(
-    o.redirectUri ?? o.redirect_uri ?? o.redirectURL ?? fallbackRedirect
+  const apiRedirect = String(
+    o.redirectUri ?? o.redirect_uri ?? o.redirectURL ?? ""
   ).trim();
 
   return {
     clientId: clientId || APPLE_SERVICES_ID_FALLBACK,
-    redirectUri: redirectUri || fallbackRedirect,
+    redirectUri: resolveAppleWebRedirectUri(apiRedirect || undefined),
   };
 }
 
@@ -173,6 +197,7 @@ export async function requestAppleWebCredentials(): Promise<AppleWebCredentials>
     return {
       identityToken,
       authorizationCode,
+      rawNonce,
       user: appleIdTokenSub(identityToken),
       email,
       firstName: name?.firstName?.trim() || undefined,
@@ -199,6 +224,11 @@ export function toAppleLoginJson(creds: AppleWebCredentials): Record<string, unk
   if (creds.lastName) {
     body.lastName = creds.lastName;
     body.last_name = creds.lastName;
+  }
+  if (creds.rawNonce) {
+    body.nonce = creds.rawNonce;
+    body.rawNonce = creds.rawNonce;
+    body.raw_nonce = creds.rawNonce;
   }
   return body;
 }

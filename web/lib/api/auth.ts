@@ -1011,10 +1011,31 @@ export async function resetPassword(email: string): Promise<void> {
   const res = await apiFetchJson<unknown>("/auth/forgot-password", {
     method: "POST",
     auth: false,
-    body: JSON.stringify({ email: email.trim() }),
+    body: JSON.stringify({ email: email.trim().toLowerCase() }),
   });
   if (!res.ok && res.status !== 204) {
     throw new AuthError(res.message, "auth/unknown");
+  }
+}
+
+/** Matches Flutter `changePassword` / `POST /auth/change-password` (settings). */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  if (!isBackendConfigured()) {
+    throw new AuthError("API is not configured.", "auth/configuration-error");
+  }
+  const res = await apiFetchJson<unknown>("/auth/change-password", {
+    method: "POST",
+    auth: true,
+    body: JSON.stringify({
+      currentPassword,
+      newPassword,
+    }),
+  });
+  if (!res.ok && res.status !== 204) {
+    throw mapApiAuthError(res.status, res.message, res.code);
   }
 }
 

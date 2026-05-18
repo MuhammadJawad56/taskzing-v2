@@ -14,6 +14,7 @@ import {
   LogOut,
   Clapperboard,
   Shield,
+  Lock,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -103,6 +104,12 @@ export default function SettingsPage() {
           onChange={setNotifications}
         />
       ),
+    },
+    {
+      icon: <Lock className="h-5 w-5" />,
+      title: t("settings.changePasswordTitle"),
+      description: t("settings.changePasswordDesc"),
+      onClick: () => router.push("/dashboard/change-password"),
     },
     {
       icon: <Shield className="h-5 w-5" />,

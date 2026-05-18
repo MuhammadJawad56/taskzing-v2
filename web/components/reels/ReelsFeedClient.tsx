@@ -312,15 +312,15 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
 
   if (status === "loading" && reels.length === 0) {
     return (
-      <div className="fixed inset-0 z-[100] bg-zinc-900 animate-pulse">
-        <div className="h-full w-full bg-gradient-to-b from-zinc-800 to-zinc-900" />
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900 animate-pulse lg:bg-[#121212]">
+        <div className="aspect-[9/16] w-[min(420px,calc((100dvh-180px)*9/16))] max-h-[min(calc(100dvh-180px),780px)] rounded-xl bg-gradient-to-b from-zinc-800 to-zinc-900 shadow-[0_8px_40px_rgba(0,0,0,0.55)]" />
       </div>
     );
   }
 
   if (status === "failure" && reels.length === 0) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black px-6 text-center text-white">
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black px-6 text-center text-white lg:bg-[#121212]">
         <p className="text-white/80 mb-4">{errorMessage ?? t("reels.loadFailed")}</p>
         <button
           type="button"
@@ -339,7 +339,7 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
   if (reels.length === 0) {
     const isFollowing = mode === "following";
     return (
-      <div className="fixed inset-0 z-[100] bg-black text-white">
+      <div className="fixed inset-0 z-[100] bg-black text-white lg:bg-[#121212]">
         <ReelsTopChrome
           mode={mode}
           muted={muted}
@@ -349,7 +349,7 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
           onSwitchMode={(m) => void switchMode(m)}
           t={t}
         />
-        <div className="flex h-full w-full flex-col items-center justify-center px-6 pb-10 pt-[max(5.5rem,env(safe-area-inset-top)+3.25rem)] text-center">
+        <div className="flex h-full w-full flex-col items-center justify-center px-6 pb-10 pt-[max(5.5rem,env(safe-area-inset-top)+3.25rem)] text-center lg:max-w-md lg:mx-auto">
           {!isFollowing ? (
             <button
               type="button"
@@ -426,7 +426,7 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black text-white">
+    <div className="fixed inset-0 z-[100] bg-black text-white lg:bg-[#121212]">
       <ReelsTopChrome
         mode={mode}
         muted={muted}
@@ -436,6 +436,22 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
         onSwitchMode={(m) => void switchMode(m)}
         t={t}
       />
+
+      <div className="pointer-events-none absolute right-5 top-1/2 z-[6] hidden -translate-y-1/2 flex-col gap-3 lg:right-auto lg:left-[calc(50%+min(210px,calc((100dvh-180px)*9/32))+88px)] lg:flex">
+        <DesktopScrollButton
+          direction="up"
+          disabled={activeIndex <= 0}
+          onClick={scrollToPreviousReel}
+          ariaLabel="Previous reel"
+        />
+        <DesktopScrollButton
+          direction="down"
+          disabled={activeIndex >= reels.length - 1 && !hasMore}
+          onClick={scrollToNextReel}
+          ariaLabel="Next reel"
+        />
+      </div>
+
       <div
         ref={scrollRef}
         className="h-full w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain"
@@ -444,13 +460,16 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
         {reels.map((reel, index) => (
           <div
             key={reel.id}
-            className="relative h-[100dvh] w-full shrink-0 snap-start snap-always bg-black"
+            className="relative flex h-[100dvh] w-full shrink-0 snap-start snap-always items-stretch justify-center bg-black lg:bg-[#121212]"
           >
-            <div
-              className="absolute inset-0 z-0"
-              onClick={() => handleVideoTap(index)}
-              role="presentation"
-            >
+            <div className="relative flex h-full w-full flex-col items-center justify-center lg:px-4 lg:py-5">
+              <div className="relative flex h-full w-full flex-col lg:h-auto lg:max-h-[min(calc(100dvh-88px),900px)] lg:items-center">
+                <div className="relative flex h-full w-full min-h-0 lg:h-[min(calc(100dvh-180px),780px)] lg:w-auto lg:flex-row lg:items-end lg:gap-3">
+                  <div
+                    className="relative h-full w-full min-h-0 lg:aspect-[9/16] lg:h-full lg:w-auto lg:max-w-[min(420px,calc((100dvh-180px)*9/16))] lg:shrink-0 lg:overflow-hidden lg:rounded-xl lg:bg-black lg:shadow-[0_8px_40px_rgba(0,0,0,0.55)]"
+                    onClick={() => handleVideoTap(index)}
+                    role="presentation"
+                  >
               <video
                 data-reel-id={reel.id}
                 src={reel.videoUrl}
@@ -463,16 +482,15 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
                 disablePictureInPicture
                 controlsList="nodownload noplaybackrate"
               />
-            </div>
-            <div
-              className="pointer-events-none absolute inset-0 z-[1]"
+                    <div
+                      className="pointer-events-none absolute inset-0 z-[1] lg:rounded-xl"
               style={{
                 background:
                   "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 18%, transparent 58%, rgba(0,0,0,0.55) 100%)",
               }}
             />
-            {likeBurstIndex === index ? (
-              <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center">
+                    {likeBurstIndex === index ? (
+                      <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center lg:rounded-xl">
                 <Heart
                   className="h-28 w-28 text-red-500 drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)] animate-[pulse_0.55s_ease-out_1]"
                   fill="currentColor"
@@ -480,58 +498,53 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
                 />
               </div>
             ) : null}
-            <div className="absolute bottom-[max(110px,env(safe-area-inset-bottom)+5.5rem)] right-3 z-[2] flex flex-col items-center gap-5">
-              <AuthorFollowStack
-                author={reel.author}
-                onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
-                onFollowSuccess={() => void refreshFollowingFeed()}
-              />
-              <ActionIcon
-                icon={<Heart className={`h-7 w-7 ${reel.isLiked ? "fill-red-400 text-red-400" : "text-white"}`} />}
-                label={String(reel.likesCount)}
-                onClick={() => likeAt(index)}
-              />
-              <ActionIcon
-                icon={<MessageCircle className="h-7 w-7 text-white" />}
-                label={String(reel.commentsCount)}
-                onClick={() => openComments(reel)}
-              />
-              <ActionIcon
-                icon={<Share2 className="h-7 w-7 text-white" />}
-                label=""
-                onClick={() => shareAt(index, reel)}
-              />
-              <ActionIcon
-                icon={muted ? <VolumeX className="h-7 w-7 text-white" /> : <Volume2 className="h-7 w-7 text-white" />}
-                label=""
-                onClick={() => setMuted((m) => !m)}
-              />
-            </div>
-            <div className="absolute bottom-[max(28px,env(safe-area-inset-bottom))] left-4 right-20 z-[2]">
-              <button
-                type="button"
-                className="text-left font-bold text-white drop-shadow-md"
-                onClick={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
-              >
-                @{reel.author.username}
-              </button>
-              {reel.caption.trim() ? (
-                <p className="mt-1.5 line-clamp-3 text-sm leading-snug text-white/90 drop-shadow-md">
-                  {reel.caption}
-                </p>
-              ) : !reel.location?.trim() ? (
-                <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-white/90 drop-shadow-md">
-                  {t("reels.noCaption")}
-                </p>
-              ) : null}
-              {reel.location?.trim() ? (
-                <div className={`flex items-start gap-1 ${reel.caption.trim() ? "mt-2" : "mt-1.5"}`}>
-                  <MapPin className="mt-0.5 h-[18px] w-[18px] shrink-0 text-white/90" aria-hidden />
-                  <p className="line-clamp-2 text-xs leading-snug text-white/85 drop-shadow-md">
-                    {reel.location.trim()}
-                  </p>
+                    <div className="absolute bottom-[max(110px,env(safe-area-inset-bottom)+5.5rem)] right-3 z-[2] flex flex-col items-center gap-5 lg:hidden">
+                      <ReelActionRail
+                        reel={reel}
+                        muted={muted}
+                        onLike={() => likeAt(index)}
+                        onComments={() => openComments(reel)}
+                        onShare={() => shareAt(index, reel)}
+                        onToggleMute={() => setMuted((m) => !m)}
+                        onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
+                        onFollowSuccess={() => void refreshFollowingFeed()}
+                        showMute
+                      />
+                    </div>
+                    <div className="absolute bottom-[max(28px,env(safe-area-inset-bottom))] left-4 right-20 z-[2] lg:hidden">
+                      <ReelCaptionBlock
+                        reel={reel}
+                        t={t}
+                        onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative z-[2] hidden shrink-0 flex-col items-center gap-4 pb-2 lg:flex">
+                    <ReelActionRail
+                      reel={reel}
+                      muted={muted}
+                      onLike={() => likeAt(index)}
+                      onComments={() => openComments(reel)}
+                      onShare={() => shareAt(index, reel)}
+                      onToggleMute={() => setMuted((m) => !m)}
+                      onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
+                      onFollowSuccess={() => void refreshFollowingFeed()}
+                      showMute
+                      desktop
+                    />
+                  </div>
                 </div>
-              ) : null}
+
+                <div className="relative z-[2] mt-0 hidden w-full max-w-[min(420px,calc((100dvh-180px)*9/16))] shrink-0 px-0.5 pb-1 pt-3 lg:block">
+                  <ReelCaptionBlock
+                    reel={reel}
+                    t={t}
+                    onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
+                    desktop
+                  />
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -601,7 +614,7 @@ function ReelsTopChrome({
 }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] flex justify-center pt-[max(8px,env(safe-area-inset-top))]">
-      <div className="pointer-events-auto flex w-full max-w-lg items-start justify-between px-3 py-1.5">
+      <div className="pointer-events-auto flex w-full max-w-lg items-start justify-between px-3 py-1.5 lg:mx-auto lg:max-w-[min(520px,calc((100dvh-180px)*9/16+88px))]">
         <button
           type="button"
           onClick={onBack}
@@ -628,7 +641,7 @@ function ReelsTopChrome({
           <button
             type="button"
             onClick={onToggleMute}
-            className="flex h-[38px] w-[38px] items-center justify-center rounded-full border border-white/20 bg-black/30"
+            className="flex h-[38px] w-[38px] items-center justify-center rounded-full border border-white/20 bg-black/30 lg:hidden"
             aria-label={muted ? t("reels.unmute") : t("reels.mute")}
           >
             {muted ? <VolumeX className="h-5 w-5 text-white" /> : <Volume2 className="h-5 w-5 text-white" />}
@@ -670,17 +683,29 @@ function ActionIcon({
   icon,
   label,
   onClick,
+  desktop = false,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  desktop?: boolean;
 }) {
   return (
     <button type="button" onClick={onClick} className="pointer-events-auto flex flex-col items-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/30">
+      <div
+        className={
+          desktop
+            ? "flex h-12 w-12 items-center justify-center"
+            : "flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/30"
+        }
+      >
         {icon}
       </div>
-      {label ? <span className="mt-1.5 text-xs font-semibold text-white">{label}</span> : null}
+      {label ? (
+        <span className={`mt-1.5 text-xs font-semibold ${desktop ? "text-white/90" : "text-white"}`}>
+          {label}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -761,5 +786,122 @@ function AuthorFollowStack({
         </button>
       ) : null}
     </div>
+  );
+}
+
+function ReelActionRail({
+  reel,
+  muted,
+  onLike,
+  onComments,
+  onShare,
+  onToggleMute,
+  onOpenProfile,
+  onFollowSuccess,
+  showMute,
+  desktop = false,
+}: {
+  reel: Reel;
+  muted: boolean;
+  onLike: () => void;
+  onComments: () => void;
+  onShare: () => void;
+  onToggleMute: () => void;
+  onOpenProfile: () => void;
+  onFollowSuccess?: () => void;
+  showMute: boolean;
+  desktop?: boolean;
+}) {
+  return (
+    <>
+      <AuthorFollowStack author={reel.author} onOpenProfile={onOpenProfile} onFollowSuccess={onFollowSuccess} />
+      <ActionIcon
+        desktop={desktop}
+        icon={<Heart className={`h-7 w-7 ${reel.isLiked ? "fill-red-400 text-red-400" : "text-white"}`} />}
+        label={String(reel.likesCount)}
+        onClick={onLike}
+      />
+      <ActionIcon
+        desktop={desktop}
+        icon={<MessageCircle className="h-7 w-7 text-white" />}
+        label={String(reel.commentsCount)}
+        onClick={onComments}
+      />
+      <ActionIcon
+        desktop={desktop}
+        icon={<Share2 className="h-7 w-7 text-white" />}
+        label=""
+        onClick={onShare}
+      />
+      {showMute ? (
+        <ActionIcon
+          desktop={desktop}
+          icon={muted ? <VolumeX className="h-7 w-7 text-white" /> : <Volume2 className="h-7 w-7 text-white" />}
+          label=""
+          onClick={onToggleMute}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function ReelCaptionBlock({
+  reel,
+  t,
+  onOpenProfile,
+  desktop = false,
+}: {
+  reel: Reel;
+  t: (key: string) => string;
+  onOpenProfile: () => void;
+  desktop?: boolean;
+}) {
+  const shadow = desktop ? "" : "drop-shadow-md";
+  return (
+    <>
+      <button
+        type="button"
+        className={`text-left font-bold text-white ${shadow}`}
+        onClick={onOpenProfile}
+      >
+        @{reel.author.username}
+      </button>
+      {reel.caption.trim() ? (
+        <p className={`mt-1.5 line-clamp-3 text-sm leading-snug text-white/90 ${shadow}`}>{reel.caption}</p>
+      ) : !reel.location?.trim() ? (
+        <p className={`mt-1.5 line-clamp-2 text-sm leading-snug text-white/90 ${shadow}`}>{t("reels.noCaption")}</p>
+      ) : null}
+      {reel.location?.trim() ? (
+        <div className={`flex items-start gap-1 ${reel.caption.trim() ? "mt-2" : "mt-1.5"}`}>
+          <MapPin className="mt-0.5 h-[18px] w-[18px] shrink-0 text-white/90" aria-hidden />
+          <p className={`line-clamp-2 text-xs leading-snug text-white/85 ${shadow}`}>{reel.location.trim()}</p>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function DesktopScrollButton({
+  direction,
+  disabled,
+  onClick,
+  ariaLabel,
+}: {
+  direction: "up" | "down";
+  disabled: boolean;
+  onClick: () => void;
+  ariaLabel: string;
+}) {
+  const Icon = direction === "up" ? ChevronUp : ChevronDown;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-35"
+    >
+      <Icon className="h-5 w-5" />
+    </button>
   );
 }

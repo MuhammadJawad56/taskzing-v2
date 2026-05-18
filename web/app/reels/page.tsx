@@ -15,7 +15,12 @@ export default function ReelsPage({
   return (
     <Suspense
       fallback={
-        <div className="fixed inset-0 z-[100] bg-zinc-900 animate-pulse" aria-hidden />
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900 animate-pulse lg:bg-[#121212]"
+          aria-hidden
+        >
+          <div className="aspect-[9/16] w-[min(420px,calc((100dvh-180px)*9/16))] max-h-[min(calc(100dvh-180px),780px)] rounded-xl bg-gradient-to-b from-zinc-800 to-zinc-900" />
+        </div>
       }
     >
       <ReelsFeedClient initialReelId={searchParams.reelId ?? null} />

@@ -4,10 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Minus,
   Plus,
-  Volume2,
-  VolumeX,
   Heart,
   MessageCircle,
   Share2,
@@ -38,10 +35,9 @@ import { searchUsers } from "@/lib/api/usersSearch";
 import { ReelCommentsSheet } from "./ReelCommentsSheet";
 import { ReelPeopleDiscoverySheet } from "./ReelPeopleDiscoverySheet";
 import { ReelUploadSheet } from "./ReelUploadSheet";
+import { VolumeSliderControl } from "./VolumeSliderControl";
 
 type FeedStatus = "initial" | "loading" | "loaded" | "failure";
-
-const VOLUME_STEP = 0.1;
 
 function clampVolume(value: number) {
   return Math.min(1, Math.max(0, Math.round(value * 10) / 10));
@@ -77,34 +73,10 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
   const modeRef = useRef(mode);
   modeRef.current = mode;
 
-  const toggleMute = useCallback(() => {
-    setVolume((current) => {
-      if (current === 0) {
-        const restored = lastVolumeRef.current > 0 ? lastVolumeRef.current : 0.8;
-        lastVolumeRef.current = restored;
-        return restored;
-      }
-      if (current > 0) lastVolumeRef.current = current;
-      return 0;
-    });
-  }, []);
-
-  const volumeUp = useCallback(() => {
-    setVolume((current) => {
-      const base = current === 0 ? lastVolumeRef.current || 0.8 : current;
-      const next = clampVolume(base + VOLUME_STEP);
-      lastVolumeRef.current = next;
-      return next;
-    });
-  }, []);
-
-  const volumeDown = useCallback(() => {
-    setVolume((current) => {
-      const base = current === 0 ? lastVolumeRef.current || 0.8 : current;
-      const next = clampVolume(base - VOLUME_STEP);
-      if (next > 0) lastVolumeRef.current = next;
-      return next;
-    });
+  const setVolumeLevel = useCallback((level: number) => {
+    const next = clampVolume(level);
+    if (next > 0) lastVolumeRef.current = next;
+    setVolume(next);
   }, []);
 
   const navigateBack = useCallback(() => {
@@ -383,9 +355,7 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
           mode={mode}
           volume={volume}
           onBack={navigateBack}
-          onToggleMute={toggleMute}
-          onVolumeUp={volumeUp}
-          onVolumeDown={volumeDown}
+          onVolumeChange={setVolumeLevel}
           onUpload={() => setUploadOpen(true)}
           onSwitchMode={(m) => void switchMode(m)}
           t={t}
@@ -472,9 +442,7 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
         mode={mode}
         volume={volume}
         onBack={navigateBack}
-        onToggleMute={toggleMute}
-        onVolumeUp={volumeUp}
-        onVolumeDown={volumeDown}
+        onVolumeChange={setVolumeLevel}
         onUpload={() => setUploadOpen(true)}
         onSwitchMode={(m) => void switchMode(m)}
         t={t}
@@ -548,9 +516,7 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
                         onLike={() => likeAt(index)}
                         onComments={() => openComments(reel)}
                         onShare={() => shareAt(index, reel)}
-                        onToggleMute={toggleMute}
-                        onVolumeUp={volumeUp}
-                        onVolumeDown={volumeDown}
+                        onVolumeChange={setVolumeLevel}
                         onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
                         onFollowSuccess={() => void refreshFollowingFeed()}
                         showMute
@@ -573,9 +539,7 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
                       onLike={() => likeAt(index)}
                       onComments={() => openComments(reel)}
                       onShare={() => shareAt(index, reel)}
-                      onToggleMute={toggleMute}
-                      onVolumeUp={volumeUp}
-                      onVolumeDown={volumeDown}
+                      onVolumeChange={setVolumeLevel}
                       onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
                       onFollowSuccess={() => void refreshFollowingFeed()}
                       showMute
@@ -644,77 +608,11 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
   );
 }
 
-function VolumeControlCluster({
-  variant,
-  volume,
-  muted,
-  onToggleMute,
-  onVolumeUp,
-  onVolumeDown,
-  t,
-  className = "",
-}: {
-  variant: "chrome" | "rail";
-  volume: number;
-  muted: boolean;
-  onToggleMute: () => void;
-  onVolumeUp: () => void;
-  onVolumeDown: () => void;
-  t: (key: string) => string;
-  className?: string;
-}) {
-  const chromeBtn =
-    "flex h-[38px] w-[38px] items-center justify-center rounded-full border border-white/20 bg-black/30 disabled:cursor-not-allowed disabled:opacity-40";
-  const railBtn =
-    "flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/30 disabled:cursor-not-allowed disabled:opacity-40";
-  const btnClass = variant === "chrome" ? chromeBtn : railBtn;
-  const iconClass = variant === "chrome" ? "h-5 w-5 text-white" : "h-6 w-6 text-white";
-  const volumePct = Math.round(volume * 100);
-
-  return (
-    <div
-      className={`flex items-center gap-1.5 ${className}`}
-      role="group"
-      aria-label={t("reels.volumeControls")}
-    >
-      <button
-        type="button"
-        onClick={onVolumeDown}
-        disabled={volume <= 0}
-        className={btnClass}
-        aria-label={t("reels.volumeDown")}
-      >
-        <Minus className={iconClass} />
-      </button>
-      <button
-        type="button"
-        onClick={onToggleMute}
-        className={btnClass}
-        aria-label={muted ? t("reels.unmute") : t("reels.mute")}
-        title={`${muted ? t("reels.unmute") : t("reels.mute")} (${volumePct}%)`}
-      >
-        {muted ? <VolumeX className={iconClass} /> : <Volume2 className={iconClass} />}
-      </button>
-      <button
-        type="button"
-        onClick={onVolumeUp}
-        disabled={volume >= 1}
-        className={btnClass}
-        aria-label={t("reels.volumeUp")}
-      >
-        <Plus className={iconClass} />
-      </button>
-    </div>
-  );
-}
-
 function ReelsTopChrome({
   mode,
   volume,
   onBack,
-  onToggleMute,
-  onVolumeUp,
-  onVolumeDown,
+  onVolumeChange,
   onUpload,
   onSwitchMode,
   t,
@@ -722,14 +620,11 @@ function ReelsTopChrome({
   mode: ReelsFeedModeApi;
   volume: number;
   onBack: () => void;
-  onToggleMute: () => void;
-  onVolumeUp: () => void;
-  onVolumeDown: () => void;
+  onVolumeChange: (level: number) => void;
   onUpload: () => void;
   onSwitchMode: (m: ReelsFeedModeApi) => void;
   t: (key: string) => string;
 }) {
-  const muted = volume === 0;
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] flex justify-center pt-[max(8px,env(safe-area-inset-top))]">
       <div className="pointer-events-auto flex w-full max-w-lg items-start justify-between px-3 py-1.5 lg:mx-auto lg:max-w-[min(520px,calc((100dvh-180px)*9/16+88px))]">
@@ -756,15 +651,13 @@ function ReelsTopChrome({
           </div>
         </div>
         <div className="flex items-start gap-2">
-          <VolumeControlCluster
+          <VolumeSliderControl
             variant="chrome"
             volume={volume}
-            muted={muted}
-            onToggleMute={onToggleMute}
-            onVolumeUp={onVolumeUp}
-            onVolumeDown={onVolumeDown}
+            onVolumeChange={onVolumeChange}
             t={t}
             className="lg:hidden"
+            popoverSide="below"
           />
           <button
             type="button"
@@ -915,9 +808,7 @@ function ReelActionRail({
   onLike,
   onComments,
   onShare,
-  onToggleMute,
-  onVolumeUp,
-  onVolumeDown,
+  onVolumeChange,
   onOpenProfile,
   onFollowSuccess,
   showMute,
@@ -929,16 +820,13 @@ function ReelActionRail({
   onLike: () => void;
   onComments: () => void;
   onShare: () => void;
-  onToggleMute: () => void;
-  onVolumeUp: () => void;
-  onVolumeDown: () => void;
+  onVolumeChange: (level: number) => void;
   onOpenProfile: () => void;
   onFollowSuccess?: () => void;
   showMute: boolean;
   desktop?: boolean;
   t: (key: string) => string;
 }) {
-  const muted = volume === 0;
   return (
     <>
       <AuthorFollowStack author={reel.author} onOpenProfile={onOpenProfile} onFollowSuccess={onFollowSuccess} />
@@ -961,15 +849,12 @@ function ReelActionRail({
         onClick={onShare}
       />
       {showMute ? (
-        <VolumeControlCluster
+        <VolumeSliderControl
           variant="rail"
           volume={volume}
-          muted={muted}
-          onToggleMute={onToggleMute}
-          onVolumeUp={onVolumeUp}
-          onVolumeDown={onVolumeDown}
+          onVolumeChange={onVolumeChange}
           t={t}
-          className="flex-row"
+          popoverSide="left"
         />
       ) : null}
     </>

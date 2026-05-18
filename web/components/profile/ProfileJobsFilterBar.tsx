@@ -89,12 +89,16 @@ export function ProfileJobsFilterBar({
             role="listbox"
             aria-label={t("profile.filter")}
             style={menuStyle}
-            className="overflow-hidden rounded-lg border border-white/20 bg-darkBlue-013 shadow-lg"
+            className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-white/20 dark:bg-darkBlue-013"
           >
             {options.map((opt) => {
               const selected = opt.id === value;
               return (
-                <li key={opt.id} role="presentation" className="border-b border-white/10 last:border-b-0">
+                <li
+                  key={opt.id}
+                  role="presentation"
+                  className="border-b border-gray-200 last:border-b-0 dark:border-white/10"
+                >
                   <button
                     type="button"
                     role="option"
@@ -104,10 +108,10 @@ export function ProfileJobsFilterBar({
                       setOpen(false);
                     }}
                     className={cn(
-                      "w-full px-3 py-2.5 text-left text-sm font-medium text-white transition-colors",
+                      "w-full px-3 py-2.5 text-left text-sm font-medium transition-colors",
                       selected
-                        ? "bg-[#2563eb] font-semibold"
-                        : "hover:bg-darkBlue-203",
+                        ? "bg-[#2563eb] font-semibold text-white"
+                        : "bg-white text-gray-900 hover:bg-gray-100 dark:bg-transparent dark:text-white dark:hover:bg-darkBlue-203",
                     )}
                   >
                     {opt.label}

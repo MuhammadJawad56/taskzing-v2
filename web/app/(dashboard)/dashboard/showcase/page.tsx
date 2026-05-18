@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Camera, X, MapPin, Map as MapIcon, Plus, Trash2, FileText } from "lucide-react";
 import { Circle, GoogleMap, Marker, useJsApiLoader, useGoogleMap } from "@react-google-maps/api";
 import { taskzingGoogleMapsLoaderConfig } from "@/lib/map/googleMapsLoader";
@@ -51,6 +51,11 @@ import {
 } from "@/lib/constants/jobFieldSuggestions";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { showDraftSavedSnackbar } from "@/lib/draftSavedEvents";
+import {
+  chatzingDraftToShowcaseFormSnapshot,
+  consumeChatzingPendingDraft,
+  dataUrlsToFiles,
+} from "@/lib/chatzing/contentDraft";
 
 const SHOWCASE_TITLE_SUGGESTIONS = [
   "Modern Website Redesign",
@@ -175,6 +180,7 @@ function ShowcaseLocationRadiusGoogleFit({
 
 export default function ShowcasePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, userData } = useAuth();
   const { language } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -518,6 +524,41 @@ export default function ShowcasePage() {
       alive = false;
     };
   }, [showDraftsModal, user?.uid]);
+
+  useEffect(() => {
+    if (searchParams.get("from") !== "chatzing" || !user?.uid) return;
+    const draft = consumeChatzingPendingDraft();
+    if (!draft || draft.kind !== "showcase") return;
+
+    const snapshot = chatzingDraftToShowcaseFormSnapshot(draft);
+    setPostingAs(snapshot.postingAs);
+    const skillTags = (snapshot.skills ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setFormData({
+      companyName: snapshot.companyName,
+      storeName: snapshot.storeName,
+      title: snapshot.title,
+      skillInput: "",
+      skillTags: skillTags.length ? skillTags : draft.skills ?? [],
+      description: snapshot.description,
+      location: snapshot.location,
+    });
+    setEditingDraftId(null);
+
+    if (draft.imageDataUrls.length > 0) {
+      void dataUrlsToFiles(draft.imageDataUrls.slice(0, 5)).then((files) => {
+        if (!files.length) return;
+        imagePreviews.forEach((url) => {
+          if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+        });
+        setSelectedImages(files);
+        setImagePreviews(files.map((f) => URL.createObjectURL(f)));
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- apply once when opened from ChatZing
+  }, [searchParams, user?.uid]);
 
   const loadShowcases = async () => {
     if (!user?.uid) return;

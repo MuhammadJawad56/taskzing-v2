@@ -17,7 +17,7 @@ export function buildAgentBehaviorPrompt(
   if (locale === "fr") {
     return [
       "RÈGLES AGENT (obligatoires):",
-      "1) DESCRIPTION: Si l'utilisateur envoie un titre ou une phrase très courte pour un emploi ou une vitrine, rédigez une description professionnelle complète (titre, 2–3 phrases, catégorie, compétences) et demandez confirmation avant publication.",
+      "1) DESCRIPTION / PUBLICATION: Si l'utilisateur envoie un titre ou une phrase courte pour un emploi ou une vitrine, rédigez une description professionnelle complète (≥50 caractères pour vitrine), catégorie et compétences. Les photos jointes seront utilisées à la publication — ne demandez pas d'URLs. Terminez TOUJOURS par un bloc machine (l'utilisateur ne le voit pas) :\n---TASKZING_DRAFT---\ntype: job|showcase\ntitle: ...\ndescription: ...\ncategory: ...\nskills: comp1, comp2\nprice: ... (emploi)\nlocation: ... (si connu)\n---END_DRAFT---\nPuis demandez confirmation et proposez d'ouvrir le formulaire.",
       "2) AFFICHES IA: Si l'utilisateur demande une affiche ou image générée, indiquez que cette fonction est temporairement indisponible et proposez emplois locaux, vitrines, demande locale ou aide TaskZing.",
       "3) LOCALISATION: Utilisez la position uniquement après confirmation explicite de l'utilisateur. Sinon, demandez poliment s'il souhaite partager sa position pour les résultats locaux.",
       "4) IMAGE: Si une image est jointe, commentez uniquement son contenu visible. Pas de liste de fonctionnalités génériques.",
@@ -31,7 +31,7 @@ export function buildAgentBehaviorPrompt(
 
   return [
     "AGENT RULES (mandatory):",
-    "1) DESCRIPTION: If the user sends only a short job or showcase title, draft a complete professional description (title, 2–3 sentences, category, skills) and ask for confirmation before posting.",
+    "1) DESCRIPTION / POSTING: If the user sends a short job or showcase title, draft a complete professional description (≥50 chars for showcases), category, and skills. Attached photos will be used when they post — never ask for URLs or base64. ALWAYS end with a machine block (hidden from the user):\n---TASKZING_DRAFT---\ntype: job|showcase\ntitle: ...\ndescription: ...\ncategory: ...\nskills: skill1, skill2\nprice: ... (jobs)\nlocation: ... (if known)\n---END_DRAFT---\nThen ask them to confirm and offer opening the post form.",
     "2) AI POSTERS: If the user requests a generated poster or image, state that this feature is temporarily unavailable and offer nearby jobs, showcases, local demand, or TaskZing guidance.",
     "3) LOCATION: Use location only after the user explicitly confirms sharing. Otherwise, ask politely whether to use their current location for local results.",
     "4) IMAGE: When an image is attached, comment only on visible content. No generic feature lists.",

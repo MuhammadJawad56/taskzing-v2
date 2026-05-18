@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock, Info, MapPin, Loader2 } from "lucide-react";
 import { ChatZingRingIcon } from "@/components/chatzing/ChatZingRingIcon";
 import { ChatzingComposer } from "@/components/chatzing/ChatzingComposer";
+import { ChatzingActionBar } from "@/components/chatzing/ChatzingActionBar";
 import { ChatzingLocationBanner } from "@/components/chatzing/ChatzingLocationBanner";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { useAuth } from "@/lib/api/AuthContext";
@@ -50,6 +51,19 @@ import {
   formatLocalChatReply,
 } from "@/lib/chatzing/localIntents";
 import type { ChatAttachment, ChatMessage, ChatMessageAction } from "@/lib/chatzing/types";
+import {
+  buildTitleExpansionUserPrompt,
+  detectPostingIntent,
+  extractDraftFromAssistantReply,
+  looksLikeTitleOnly,
+  saveChatzingPendingDraft,
+  type ChatzingContentDraft,
+} from "@/lib/chatzing/contentDraft";
+import {
+  getQuickActionLabel,
+  getQuickActionPrompt,
+  type ChatzingQuickActionId,
+} from "@/lib/chatzing/quickActions";
 import { getUserLocation } from "@/lib/map/getPreciseUserLocation";
 
 function PosterChatImage({
@@ -127,13 +141,13 @@ export default function ChatZingPage() {
 
   const howItWorksTitle = isFr ? "Comment fonctionne ChatZing" : "How ChatZing works";
   const howItWorksBody = isFr
-    ? "Envoyez un titre court pour obtenir une description complète. Confirmez votre position pour les résultats locaux. Vous pouvez aussi joindre une photo ou utiliser le microphone."
-    : "Send a short title to get a full description drafted. Confirm your location for local results. You can also attach a photo or use the microphone.";
+    ? "Donnez un titre d'emploi ou de vitrine : ChatZing rédige la description complète. Joignez vos photos ici — elles seront reprises dans le formulaire de publication. Confirmez votre position pour les résultats locaux."
+    : "Give a job or showcase title — ChatZing drafts the full description. Attach your photos here and they will carry into the post form. Confirm location for local results.";
   const howItWorksCta = isFr ? "Compris" : "Got it";
 
   const welcomeMessage = isFr
-    ? "Bonjour. Je suis ChatZing, votre assistant TaskZing.\n\nJe peux rédiger des descriptions, vous orienter sur les emplois et vitrines, analyser la demande locale et répondre à vos questions sur la plateforme."
-    : "Hello. I am ChatZing, your TaskZing assistant.\n\nI can draft descriptions, guide you on jobs and showcases, review local demand, and answer questions about the platform.";
+    ? "Bonjour. Je suis ChatZing, votre assistant TaskZing.\n\nEnvoyez un titre (ex. « Rénovation cuisine ») pour un emploi ou une vitrine : je rédige la description complète. Joignez des photos si vous voulez — je les transmettrai au formulaire de publication."
+    : "Hello. I am ChatZing, your TaskZing assistant.\n\nSend a title (e.g. \"Kitchen renovation\") for a job or showcase and I will draft the full description. Attach photos if you like — I will pass them to the post form when you publish.";
 
   const learningNote = "";
 
@@ -168,6 +182,57 @@ export default function ChatZingPage() {
   const denyLocationShare = useCallback(() => {
     setLocationBannerDismissed(true);
   }, []);
+
+  const openDraftInForm = useCallback(
+    (draft: ChatzingContentDraft) => {
+      saveChatzingPendingDraft(draft);
+      router.push(
+        draft.kind === "job" ? "/post-task?from=chatzing" : "/dashboard/showcase?from=chatzing"
+      );
+    },
+    [router]
+  );
+
+  const handleQuickAction = useCallback(
+    (id: ChatzingQuickActionId) => {
+      if (id === "image") {
+        fileInputRef.current?.click();
+        return;
+      }
+      if (id === "voice") {
+        void handleVoiceClick();
+        return;
+      }
+      const prompt = getQuickActionPrompt(id, locale);
+      if (!prompt) return;
+      if (
+        (id === "nearby_jobs" || id === "nearby_showcases" || id === "local_demand") &&
+        pendingLocation &&
+        !locationConfirmed
+      ) {
+        setPendingLocalAction({
+          apiPrompt: prompt,
+          display: getQuickActionLabel(id, locale),
+        });
+        setLocationBannerDismissed(false);
+        return;
+      }
+      void sendToChatZing(prompt, null, undefined, {
+        userDisplayContent:
+          id === "post_job"
+            ? isFr
+              ? "Aidez-moi à publier un emploi"
+              : "Help me post a job"
+            : id === "post_showcase"
+              ? isFr
+                ? "Aidez-moi à créer une vitrine"
+                : "Help me create a showcase"
+              : getQuickActionLabel(id, locale),
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locale, pendingLocation, locationConfirmed, isFr]
+  );
 
   useEffect(() => {
     if (!showHowItWorks) return;
@@ -244,6 +309,39 @@ export default function ChatZingPage() {
         ? textToSend.replace(/^\[[^\]]+\]\s*/, "").trim() || textToSend
         : textToSend);
 
+    const attachedImages: string[] =
+      attachment?.type === "image" && attachment.data
+        ? [attachment.data]
+        : imagePreview
+          ? [imagePreview]
+          : [];
+
+    const postingIntent =
+      !options?.imageOnlyMode && !options?.visionAnalysis
+        ? detectPostingIntent(userFacingText) ??
+          (looksLikeTitleOnly(userFacingText) ? ("job" as const) : null)
+        : null;
+
+    let apiUserText = textToSend;
+    if (postingIntent && !options?.imageOnlyMode) {
+      const photoNote =
+        attachedImages.length > 0
+          ? isFr
+            ? " L'utilisateur a joint des photos à utiliser à la publication."
+            : " The user attached photos to use when posting."
+          : "";
+      apiUserText =
+        buildTitleExpansionUserPrompt(userFacingText, postingIntent, locale) + photoNote;
+    } else if (
+      attachedImages.length > 0 &&
+      !options?.imageOnlyMode &&
+      userFacingText.length < 120
+    ) {
+      apiUserText = isFr
+        ? `${userFacingText}\n\n[Photos jointes pour l'emploi ou la vitrine — utilisez-les à la publication, ne demandez pas d'URL.]`
+        : `${userFacingText}\n\n[Photos attached for the job or showcase — use them when posting; do not ask for URLs.]`;
+    }
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -305,7 +403,7 @@ export default function ChatZingPage() {
             locale,
             options.userQuestion ?? options.userDisplayContent ?? textToSend
           )
-        : buildChatApiMessages(prior, textToSend, locale, {
+        : buildChatApiMessages(prior, apiUserText, locale, {
             locationConfirmed: session.locationConfirmed,
             pendingLocation: session.pendingLocation,
           });
@@ -331,7 +429,17 @@ export default function ChatZingPage() {
             ]
           : undefined;
 
-      let replyText = res.message;
+      const defaultDraftKind =
+        postingIntent ?? detectPostingIntent(userFacingText) ?? "job";
+
+      const { displayText: draftStrippedText, draft: parsedDraft } =
+        extractDraftFromAssistantReply(res.message, res.tool_calls, {
+          defaultKind: defaultDraftKind,
+          userText: userFacingText,
+          imageDataUrls: attachedImages,
+        });
+
+      let replyText = draftStrippedText;
       const badImageReply =
         options?.imageOnlyMode &&
         (isGenericCapabilitiesReply(replyText) || isIrrelevantImageReply(replyText));
@@ -385,13 +493,29 @@ export default function ChatZingPage() {
         if (showcaseTopic) replyText = formatShowcaseGuidanceReply(locale);
       }
 
+      const draftActions: ChatMessageAction[] = [];
+      if (parsedDraft && parsedDraft.description.trim().length >= 20) {
+        draftActions.push({
+          type: parsedDraft.kind === "job" ? "open_job_form" : "open_showcase_form",
+          label:
+            parsedDraft.kind === "job"
+              ? isFr
+                ? "Continuer — Publier un emploi"
+                : "Continue — Post a job"
+              : isFr
+                ? "Continuer — Vitrine"
+                : "Continue — Showcase work",
+        });
+      }
+
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
         content: replyText,
         timestamp: new Date(),
         images: images.length ? images : undefined,
-        actions,
+        actions: [...(actions ?? []), ...draftActions],
+        draft: parsedDraft ?? undefined,
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (e) {
@@ -616,8 +740,15 @@ export default function ChatZingPage() {
 
   const handleMessageAction = async (
     action: ChatMessageAction,
+    message?: ChatMessage,
     followUpPrompt?: string | null
   ) => {
+    if (action.type === "open_job_form" || action.type === "open_showcase_form") {
+      if (message?.draft) {
+        openDraftInForm(message.draft);
+      }
+      return;
+    }
     if (action.type === "confirm_location") {
       confirmLocationShare();
       if (followUpPrompt) {
@@ -825,13 +956,15 @@ export default function ChatZingPage() {
               )}
               {message.actions && message.actions.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {message.actions.map((action) => (
+                  {message.actions.map((action, actionIdx) => (
                     <button
-                      key={`${message.id}-${action.type}`}
+                      key={`${message.id}-${action.type}-${actionIdx}`}
                       type="button"
-                      onClick={() => handleMessageAction(action)}
+                      onClick={() => handleMessageAction(action, message)}
                       className={
-                        action.type === "confirm_location"
+                        action.type === "confirm_location" ||
+                        action.type === "open_job_form" ||
+                        action.type === "open_showcase_form"
                           ? "rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
                           : "rounded-lg border border-gray-300 px-3 py-1.5 text-xs dark:border-gray-500"
                       }
@@ -893,7 +1026,13 @@ export default function ChatZingPage() {
           className="hidden"
           onChange={handleImagePick}
         />
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-3xl space-y-3">
+          <ChatzingActionBar
+            locale={locale}
+            disabled={isTyping || !user}
+            isRecording={isRecording}
+            onAction={handleQuickAction}
+          />
           <ChatzingComposer
             value={inputValue}
             onChange={setInputValue}

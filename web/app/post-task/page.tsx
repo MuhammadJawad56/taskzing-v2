@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Calendar, MapPin, Plus, Camera, X, Clock, ChevronDown, Keyboard, Edit, ChevronLeft, ChevronRight, AlertCircle, Info, Map as MapIcon } from "lucide-react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { taskzingGoogleMapsLoaderConfig } from "@/lib/map/googleMapsLoader";
@@ -47,6 +47,11 @@ import {
 } from "@/lib/constants/jobFieldSuggestions";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { showDraftSavedSnackbar } from "@/lib/draftSavedEvents";
+import {
+  chatzingDraftToJobFormSnapshot,
+  consumeChatzingPendingDraft,
+  dataUrlsToFiles,
+} from "@/lib/chatzing/contentDraft";
 
 const JOB_TITLE_SUGGESTIONS = [
   "Plumbing Repair",
@@ -116,6 +121,7 @@ const JOB_TITLE_SUGGESTIONS = [
 const DEFAULT_POST_JOB_MAP_CENTER = { lat: 31.5204, lng: 74.3587 };
 export default function PostTaskPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, userData } = useAuth();
   const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState<"jobs" | "drafts">("jobs");
@@ -299,6 +305,31 @@ export default function PostTaskPage() {
       alive = false;
     };
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (searchParams.get("from") !== "chatzing" || !user?.uid) return;
+    const draft = consumeChatzingPendingDraft();
+    if (!draft || draft.kind !== "job") return;
+
+    setJobType("fixed");
+    setPostingType("individual");
+    setFormData({
+      ...chatzingDraftToJobFormSnapshot(draft),
+      skillInput: "",
+    });
+    setEditingDraftId(null);
+    setActiveTab("jobs");
+
+    if (draft.imageDataUrls.length > 0) {
+      void dataUrlsToFiles(draft.imageDataUrls).then((files) => {
+        if (!files.length) return;
+        revokePhotoPreviewUrls();
+        setPhotos(files);
+        setPhotoPreviews(files.map((f) => URL.createObjectURL(f)));
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- apply once when opened from ChatZing
+  }, [searchParams, user?.uid]);
 
   useEffect(() => {
     if (activeTab !== "drafts" || !user?.uid) return;

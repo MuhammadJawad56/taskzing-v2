@@ -1,3 +1,5 @@
+import type { ChatzingContentDraft } from "./contentDraft";
+
 /** UI chat message (persisted in component state). */
 export interface ChatMessage {
   id: string;
@@ -6,8 +8,10 @@ export interface ChatMessage {
   timestamp: Date;
   /** Poster or other images returned by the agent */
   images?: string[];
-  /** Inline actions (e.g. confirm GPS for local tools) */
+  /** Inline actions (e.g. confirm GPS, open post form with AI draft) */
   actions?: ChatMessageAction[];
+  /** Parsed job/showcase draft for one-tap posting */
+  draft?: ChatzingContentDraft;
 }
 
 /** Payload for POST /v1/chat */
@@ -41,7 +45,7 @@ export interface AgentContext {
 }
 
 export interface ChatMessageAction {
-  type: "confirm_location" | "deny_location";
+  type: "confirm_location" | "deny_location" | "open_job_form" | "open_showcase_form";
   label: string;
 }
 

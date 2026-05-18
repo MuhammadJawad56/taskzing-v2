@@ -16,6 +16,7 @@ export type ChatzingQuickActionId =
   | "nearby_showcases"
   | "local_demand"
   | "post_job"
+  | "post_showcase"
   | "help";
 
 export type ChatzingQuickAction = {
@@ -32,6 +33,7 @@ export const CHATZING_QUICK_ACTIONS: ChatzingQuickAction[] = [
   { id: "nearby_showcases", icon: Grid3X3, usesChat: true },
   { id: "local_demand", icon: TrendingUp, usesChat: true },
   { id: "post_job", icon: PlusCircle, usesChat: true },
+  { id: "post_showcase", icon: PlusCircle, usesChat: true },
   { id: "help", icon: HelpCircle, usesChat: true },
 ];
 
@@ -46,6 +48,8 @@ const PROMPTS = {
       "Ask what service or product I offer, then explain local demand and competition near my location.",
     post_job:
       "Help me post a new job on TaskZing. If I only give a title or short phrase, draft a full professional description for me to review, then help with budget, address, date, and skills before posting.",
+    post_showcase:
+      "Help me create a TaskZing showcase. If I only give a title or short phrase, draft a full professional description (at least 50 characters), category, and skills. I can attach photos in chat for you to use when I publish.",
     help:
       "Summarize what ChatZing can do on TaskZing: help, jobs, showcases, voice, photo analysis, and local insights.",
   },
@@ -58,6 +62,8 @@ const PROMPTS = {
       "Demandez ce que j'offre, puis expliquez la demande locale et la concurrence près de chez moi.",
     post_job:
       "Aidez-moi à publier un emploi sur TaskZing. Si je ne donne qu'un titre ou une phrase courte, rédigez une description complète pour validation, puis budget, adresse, date et compétences avant publication.",
+    post_showcase:
+      "Aidez-moi à créer une vitrine TaskZing. Si je ne donne qu'un titre ou une phrase courte, rédigez une description complète (au moins 50 caractères), catégorie et compétences. Je peux joindre des photos ici pour la publication.",
     help:
       "Résumez ce que ChatZing peut faire sur TaskZing : aide, emplois, vitrines, voix, analyse de photos et insights locaux.",
   },
@@ -71,6 +77,7 @@ const LABELS = {
     nearby_showcases: "Showcases",
     local_demand: "Local demand",
     post_job: "Post job",
+    post_showcase: "Showcase",
     help: "Help",
   },
   fr: {
@@ -80,6 +87,7 @@ const LABELS = {
     nearby_showcases: "Vitrines",
     local_demand: "Demande locale",
     post_job: "Publier",
+    post_showcase: "Vitrine",
     help: "Aide",
   },
 } as const;

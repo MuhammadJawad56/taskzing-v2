@@ -56,6 +56,8 @@ export interface UserData {
   photoUrl?: string;
   profilePicture?: string;
   isVerified?: boolean;
+  /** Flutter `BackendUserDto.totpEnabled` — account 2FA is active */
+  totpEnabled?: boolean;
   /** Firestore / API: explicit online flag when using presence */
   isOnline?: boolean;
   /** ISO timestamp of last activity (used with PRESENCE_RECENT_MS when isOnline is absent) */

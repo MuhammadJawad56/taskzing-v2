@@ -13,6 +13,7 @@ import {
   UserX,
   LogOut,
   Clapperboard,
+  Shield,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -102,6 +103,12 @@ export default function SettingsPage() {
           onChange={setNotifications}
         />
       ),
+    },
+    {
+      icon: <Shield className="h-5 w-5" />,
+      title: t("settings.twoFactor"),
+      description: t("settings.twoFactorDesc"),
+      onClick: () => router.push("/dashboard/two-factor"),
     },
     {
       icon: <Clapperboard className="h-5 w-5" />,

@@ -339,6 +339,11 @@ export function apiRecordToUserData(raw: unknown, uid: string): UserData {
         r.profile_picture ||
         r.photo_url) as string | undefined,
     isVerified: r.isVerified as boolean | undefined,
+    totpEnabled:
+      r.totpEnabled === true ||
+      r.totp_enabled === true ||
+      r.twoFactorEnabled === true ||
+      r.two_factor_enabled === true,
     isOnline:
       r.isOnline === true ||
       r.online === true ||
@@ -616,11 +621,20 @@ export async function signIn(
   return { user: authUser, userData };
 }
 
-/** Matches Flutter `verifyTwoFactor`: POST body `{ code }`, Bearer `twoFactorToken`. */
+/** Matches Flutter `verifyTwoFactor`: POST `{ code }` and/or `{ backupCode }`, Bearer `twoFactorToken`. */
 export async function completeTwoFactorSignIn(
   twoFactorToken: string,
-  code: string
+  options: { code?: string; backupCode?: string }
 ): Promise<{ user: AuthUser; userData: UserData }> {
+  const body: Record<string, string> = {};
+  const code = options.code?.trim();
+  const backupCode = options.backupCode?.trim();
+  if (code) body.code = code;
+  if (backupCode) body.backupCode = backupCode;
+  if (!body.code && !body.backupCode) {
+    throw new AuthError("Enter a verification or backup code.", "auth/invalid-credential");
+  }
+
   const res = await apiFetchJson<Record<string, unknown>>("/auth/2fa/verify", {
     method: "POST",
     auth: false,
@@ -628,7 +642,7 @@ export async function completeTwoFactorSignIn(
       "Content-Type": "application/json",
       Authorization: `Bearer ${twoFactorToken}`,
     },
-    body: JSON.stringify({ code: code.trim() }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {

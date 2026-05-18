@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Minus,
   Plus,
   Volume2,
   VolumeX,
@@ -40,6 +41,12 @@ import { ReelUploadSheet } from "./ReelUploadSheet";
 
 type FeedStatus = "initial" | "loading" | "loaded" | "failure";
 
+const VOLUME_STEP = 0.1;
+
+function clampVolume(value: number) {
+  return Math.min(1, Math.max(0, Math.round(value * 10) / 10));
+}
+
 export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | null }) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -47,13 +54,14 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef<number>(0);
   const loadMoreLock = useRef(false);
+  const lastVolumeRef = useRef(1);
 
   const [status, setStatus] = useState<FeedStatus>("initial");
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [nextPage, setNextPage] = useState(1);
-  const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [mode, setMode] = useState<ReelsFeedModeApi>("for_you");
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
@@ -68,6 +76,36 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
 
   const modeRef = useRef(mode);
   modeRef.current = mode;
+
+  const toggleMute = useCallback(() => {
+    setVolume((current) => {
+      if (current === 0) {
+        const restored = lastVolumeRef.current > 0 ? lastVolumeRef.current : 0.8;
+        lastVolumeRef.current = restored;
+        return restored;
+      }
+      if (current > 0) lastVolumeRef.current = current;
+      return 0;
+    });
+  }, []);
+
+  const volumeUp = useCallback(() => {
+    setVolume((current) => {
+      const base = current === 0 ? lastVolumeRef.current || 0.8 : current;
+      const next = clampVolume(base + VOLUME_STEP);
+      lastVolumeRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const volumeDown = useCallback(() => {
+    setVolume((current) => {
+      const base = current === 0 ? lastVolumeRef.current || 0.8 : current;
+      const next = clampVolume(base - VOLUME_STEP);
+      if (next > 0) lastVolumeRef.current = next;
+      return next;
+    });
+  }, []);
 
   const navigateBack = useCallback(() => {
     const raw = String(userData?.currentRole ?? userData?.role ?? "").toLowerCase().replace(/\s+/g, "");
@@ -170,13 +208,14 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
       const v = document.querySelector<HTMLVideoElement>(`video[data-reel-id="${r.id}"]`);
       if (!v) return;
       if (i === activeIndex) {
-        v.muted = muted;
+        v.muted = volume === 0;
+        if (volume > 0) v.volume = volume;
         void v.play().catch(() => {});
       } else {
         v.pause();
       }
     });
-  }, [activeIndex, muted, reels]);
+  }, [activeIndex, volume, reels]);
 
   const switchMode = async (m: ReelsFeedModeApi) => {
     if (m === mode) return;
@@ -342,9 +381,11 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
       <div className="fixed inset-0 z-[100] bg-black text-white lg:bg-[#121212]">
         <ReelsTopChrome
           mode={mode}
-          muted={muted}
+          volume={volume}
           onBack={navigateBack}
-          onToggleMute={() => setMuted((m) => !m)}
+          onToggleMute={toggleMute}
+          onVolumeUp={volumeUp}
+          onVolumeDown={volumeDown}
           onUpload={() => setUploadOpen(true)}
           onSwitchMode={(m) => void switchMode(m)}
           t={t}
@@ -429,9 +470,11 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
     <div className="fixed inset-0 z-[100] bg-black text-white lg:bg-[#121212]">
       <ReelsTopChrome
         mode={mode}
-        muted={muted}
+        volume={volume}
         onBack={navigateBack}
-        onToggleMute={() => setMuted((m) => !m)}
+        onToggleMute={toggleMute}
+        onVolumeUp={volumeUp}
+        onVolumeDown={volumeDown}
         onUpload={() => setUploadOpen(true)}
         onSwitchMode={(m) => void switchMode(m)}
         t={t}
@@ -477,7 +520,7 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
                 className="h-full w-full object-cover"
                 playsInline
                 loop
-                muted={muted}
+                muted={volume === 0}
                 preload={Math.abs(index - activeIndex) <= 1 ? "metadata" : "none"}
                 disablePictureInPicture
                 controlsList="nodownload noplaybackrate"
@@ -501,14 +544,17 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
                     <div className="absolute bottom-[max(110px,env(safe-area-inset-bottom)+5.5rem)] right-3 z-[2] flex flex-col items-center gap-5 lg:hidden">
                       <ReelActionRail
                         reel={reel}
-                        muted={muted}
+                        volume={volume}
                         onLike={() => likeAt(index)}
                         onComments={() => openComments(reel)}
                         onShare={() => shareAt(index, reel)}
-                        onToggleMute={() => setMuted((m) => !m)}
+                        onToggleMute={toggleMute}
+                        onVolumeUp={volumeUp}
+                        onVolumeDown={volumeDown}
                         onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
                         onFollowSuccess={() => void refreshFollowingFeed()}
                         showMute
+                        t={t}
                       />
                     </div>
                     <div className="absolute bottom-[max(28px,env(safe-area-inset-bottom))] left-4 right-20 z-[2] lg:hidden">
@@ -523,15 +569,18 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
                   <div className="relative z-[2] hidden shrink-0 flex-col items-center gap-4 pb-2 lg:flex">
                     <ReelActionRail
                       reel={reel}
-                      muted={muted}
+                      volume={volume}
                       onLike={() => likeAt(index)}
                       onComments={() => openComments(reel)}
                       onShare={() => shareAt(index, reel)}
-                      onToggleMute={() => setMuted((m) => !m)}
+                      onToggleMute={toggleMute}
+                      onVolumeUp={volumeUp}
+                      onVolumeDown={volumeDown}
                       onOpenProfile={() => router.push(`/profile/${encodeURIComponent(reel.author.id)}`)}
                       onFollowSuccess={() => void refreshFollowingFeed()}
                       showMute
                       desktop
+                      t={t}
                     />
                   </div>
                 </div>
@@ -595,23 +644,92 @@ export function ReelsFeedClient({ initialReelId }: { initialReelId?: string | nu
   );
 }
 
+function VolumeControlCluster({
+  variant,
+  volume,
+  muted,
+  onToggleMute,
+  onVolumeUp,
+  onVolumeDown,
+  t,
+  className = "",
+}: {
+  variant: "chrome" | "rail";
+  volume: number;
+  muted: boolean;
+  onToggleMute: () => void;
+  onVolumeUp: () => void;
+  onVolumeDown: () => void;
+  t: (key: string) => string;
+  className?: string;
+}) {
+  const chromeBtn =
+    "flex h-[38px] w-[38px] items-center justify-center rounded-full border border-white/20 bg-black/30 disabled:cursor-not-allowed disabled:opacity-40";
+  const railBtn =
+    "flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/30 disabled:cursor-not-allowed disabled:opacity-40";
+  const btnClass = variant === "chrome" ? chromeBtn : railBtn;
+  const iconClass = variant === "chrome" ? "h-5 w-5 text-white" : "h-6 w-6 text-white";
+  const volumePct = Math.round(volume * 100);
+
+  return (
+    <div
+      className={`flex items-center gap-1.5 ${className}`}
+      role="group"
+      aria-label={t("reels.volumeControls")}
+    >
+      <button
+        type="button"
+        onClick={onVolumeDown}
+        disabled={volume <= 0}
+        className={btnClass}
+        aria-label={t("reels.volumeDown")}
+      >
+        <Minus className={iconClass} />
+      </button>
+      <button
+        type="button"
+        onClick={onToggleMute}
+        className={btnClass}
+        aria-label={muted ? t("reels.unmute") : t("reels.mute")}
+        title={`${muted ? t("reels.unmute") : t("reels.mute")} (${volumePct}%)`}
+      >
+        {muted ? <VolumeX className={iconClass} /> : <Volume2 className={iconClass} />}
+      </button>
+      <button
+        type="button"
+        onClick={onVolumeUp}
+        disabled={volume >= 1}
+        className={btnClass}
+        aria-label={t("reels.volumeUp")}
+      >
+        <Plus className={iconClass} />
+      </button>
+    </div>
+  );
+}
+
 function ReelsTopChrome({
   mode,
-  muted,
+  volume,
   onBack,
   onToggleMute,
+  onVolumeUp,
+  onVolumeDown,
   onUpload,
   onSwitchMode,
   t,
 }: {
   mode: ReelsFeedModeApi;
-  muted: boolean;
+  volume: number;
   onBack: () => void;
   onToggleMute: () => void;
+  onVolumeUp: () => void;
+  onVolumeDown: () => void;
   onUpload: () => void;
   onSwitchMode: (m: ReelsFeedModeApi) => void;
   t: (key: string) => string;
 }) {
+  const muted = volume === 0;
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] flex justify-center pt-[max(8px,env(safe-area-inset-top))]">
       <div className="pointer-events-auto flex w-full max-w-lg items-start justify-between px-3 py-1.5 lg:mx-auto lg:max-w-[min(520px,calc((100dvh-180px)*9/16+88px))]">
@@ -638,14 +756,16 @@ function ReelsTopChrome({
           </div>
         </div>
         <div className="flex items-start gap-2">
-          <button
-            type="button"
-            onClick={onToggleMute}
-            className="flex h-[38px] w-[38px] items-center justify-center rounded-full border border-white/20 bg-black/30 lg:hidden"
-            aria-label={muted ? t("reels.unmute") : t("reels.mute")}
-          >
-            {muted ? <VolumeX className="h-5 w-5 text-white" /> : <Volume2 className="h-5 w-5 text-white" />}
-          </button>
+          <VolumeControlCluster
+            variant="chrome"
+            volume={volume}
+            muted={muted}
+            onToggleMute={onToggleMute}
+            onVolumeUp={onVolumeUp}
+            onVolumeDown={onVolumeDown}
+            t={t}
+            className="lg:hidden"
+          />
           <button
             type="button"
             onClick={onUpload}
@@ -791,27 +911,34 @@ function AuthorFollowStack({
 
 function ReelActionRail({
   reel,
-  muted,
+  volume,
   onLike,
   onComments,
   onShare,
   onToggleMute,
+  onVolumeUp,
+  onVolumeDown,
   onOpenProfile,
   onFollowSuccess,
   showMute,
   desktop = false,
+  t,
 }: {
   reel: Reel;
-  muted: boolean;
+  volume: number;
   onLike: () => void;
   onComments: () => void;
   onShare: () => void;
   onToggleMute: () => void;
+  onVolumeUp: () => void;
+  onVolumeDown: () => void;
   onOpenProfile: () => void;
   onFollowSuccess?: () => void;
   showMute: boolean;
   desktop?: boolean;
+  t: (key: string) => string;
 }) {
+  const muted = volume === 0;
   return (
     <>
       <AuthorFollowStack author={reel.author} onOpenProfile={onOpenProfile} onFollowSuccess={onFollowSuccess} />
@@ -834,11 +961,15 @@ function ReelActionRail({
         onClick={onShare}
       />
       {showMute ? (
-        <ActionIcon
-          desktop={desktop}
-          icon={muted ? <VolumeX className="h-7 w-7 text-white" /> : <Volume2 className="h-7 w-7 text-white" />}
-          label=""
-          onClick={onToggleMute}
+        <VolumeControlCluster
+          variant="rail"
+          volume={volume}
+          muted={muted}
+          onToggleMute={onToggleMute}
+          onVolumeUp={onVolumeUp}
+          onVolumeDown={onVolumeDown}
+          t={t}
+          className="flex-row"
         />
       ) : null}
     </>

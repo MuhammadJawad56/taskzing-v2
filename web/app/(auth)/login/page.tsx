@@ -49,6 +49,8 @@ function LoginPageContent() {
   const [apiReady, setApiReady] = useState(true);
   const [twoFaChallenge, setTwoFaChallenge] = useState<TwoFactorLoginChallenge | null>(null);
   const [twoFaCode, setTwoFaCode] = useState("");
+  const [twoFaBackupCode, setTwoFaBackupCode] = useState("");
+  const [twoFaUseBackup, setTwoFaUseBackup] = useState(false);
 
   useEffect(() => {
     const ready = isBackendConfigured();
@@ -146,17 +148,22 @@ function LoginPageContent() {
 
   const handleTwoFactorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!twoFaChallenge || !twoFaCode.trim()) return;
+    if (!twoFaChallenge) return;
+    const backup = twoFaUseBackup ? twoFaBackupCode.trim() : "";
+    const code = !twoFaUseBackup ? twoFaCode.trim() : "";
+    if (!backup && !code) return;
     setError("");
     setIsLoading(true);
     try {
       const userCredential = await completeTwoFactorSignIn(
         twoFaChallenge.twoFactorToken,
-        twoFaCode.trim()
+        { code: code || undefined, backupCode: backup || undefined }
       );
       setAuthCookie(userCredential.user);
       setTwoFaChallenge(null);
       setTwoFaCode("");
+      setTwoFaBackupCode("");
+      setTwoFaUseBackup(false);
       const profileComplete = await isProfileComplete(userCredential.user.uid);
       if (!profileComplete) {
         router.push("/initial-profile-steps");
@@ -272,16 +279,43 @@ function LoginPageContent() {
           />
 
           {twoFaChallenge ? (
-            <AuthPillInput
-              type="text"
-              inputMode="numeric"
-              placeholder="6-digit code"
-              value={twoFaCode}
-              onChange={(e) => setTwoFaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              required
-              autoComplete="one-time-code"
-              aria-label="Two-factor code"
-            />
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={twoFaUseBackup}
+                  onChange={(e) => {
+                    setTwoFaUseBackup(e.target.checked);
+                    setTwoFaCode("");
+                    setTwoFaBackupCode("");
+                  }}
+                  className="rounded"
+                />
+                {t("twoFa.useBackupCode")}
+              </label>
+              {twoFaUseBackup ? (
+                <AuthPillInput
+                  type="text"
+                  placeholder={t("twoFa.backupCode")}
+                  value={twoFaBackupCode}
+                  onChange={(e) => setTwoFaBackupCode(e.target.value)}
+                  required
+                  autoComplete="off"
+                  aria-label={t("twoFa.backupCode")}
+                />
+              ) : (
+                <AuthPillInput
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="6-digit code"
+                  value={twoFaCode}
+                  onChange={(e) => setTwoFaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  required
+                  autoComplete="one-time-code"
+                  aria-label="Two-factor code"
+                />
+              )}
+            </div>
           ) : (
           <div className="space-y-2">
             <AuthPasswordPill
@@ -381,3 +415,4 @@ export default function LoginPage() {
     </SocialAuthProviders>
   );
 }
+

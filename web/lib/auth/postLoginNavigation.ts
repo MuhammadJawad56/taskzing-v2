@@ -1,63 +1,28 @@
-import {
-  getUserData,
-  isOnboardingFlowCompleteForNav,
-  type AuthUser,
-  type UserData,
-} from "@/lib/api/auth";
-import { isAuthEntryRoute } from "@/lib/auth/routeAccess";
+import type { UserData } from "@/lib/api/client";
 
-export type ProfileOnboardingMeta = {
-  profileComplete?: boolean;
-  missingFields?: string[];
-  lockedFields?: string[];
-  editableFields?: string[];
+/** Minimal session shape for routing (avoids importing auth module at load time). */
+export type PostLoginUser = {
+  uid: string;
+  email: string | null;
+  emailVerified?: boolean;
+  isGoogleOrAppleUser?: boolean;
 };
+import { isAuthEntryRoute } from "@/lib/auth/routeAccess";
+import {
+  isOnboardingFlowCompleteForNav,
+  isSplashProfileComplete,
+} from "@/lib/auth/profileGate";
 
-/** Flutter `splash_profile_complete.dart` + `profileCompleted` from API. */
-export function isSplashProfileComplete(
-  userData: UserData | null | undefined
-): boolean {
-  if (!userData) return false;
-
-  if (userData.profileCompleted === true) return true;
-
-  const onboarding = userData.onboarding;
-  if (onboarding != null && typeof onboarding.profileComplete === "boolean") {
-    return onboarding.profileComplete;
-  }
-
-  const fullName = String(userData.fullName || userData.name || "").trim();
-  const username = String(userData.username || "").trim();
-  const location = String(userData.location || "").trim();
-  const description = String(
-    userData.description || userData.bio || userData.about || ""
-  ).trim();
-  const role = userData.role;
-  const currentRole = userData.currentRole;
-
-  if (!fullName || !role || !currentRole || !username || !location || !description) {
-    return false;
-  }
-
-  const isProvider =
-    currentRole === "provider" ||
-    currentRole === "both" ||
-    role === "provider" ||
-    role === "client+provider";
-
-  if (isProvider) {
-    const skills = userData.skills || [];
-    if (skills.length === 0) return false;
-  }
-
-  return true;
-}
+export {
+  isOnboardingFlowCompleteForNav,
+  isSplashProfileComplete,
+} from "@/lib/auth/profileGate";
 
 /**
  * Flutter `ResolvePostLoginRouteUseCase` — order: email verify → onboarding → initial profile → app home.
  */
 export function resolvePostLoginPath(
-  user: AuthUser,
+  user: PostLoginUser,
   userData: UserData | null | undefined,
   options?: { redirect?: string | null }
 ): string {
@@ -101,10 +66,11 @@ export function resolvePostLoginPath(
 
 export async function navigateAfterAuth(
   router: { push: (path: string) => void; replace?: (path: string) => void },
-  user: AuthUser,
+  user: PostLoginUser,
   userData?: UserData | null,
   options?: { redirect?: string | null; replace?: boolean }
 ): Promise<void> {
+  const { getUserData } = await import("@/lib/api/auth");
   const data = userData ?? (await getUserData(user.uid));
   const path = resolvePostLoginPath(user, data, { redirect: options?.redirect });
   if (options?.replace && router.replace) {

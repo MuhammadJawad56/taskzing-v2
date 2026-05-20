@@ -403,34 +403,12 @@ function parseProfileOnboardingMeta(
   };
 }
 
-/** Flutter `nav.dart`: `onboardingCompletedAt != null && onboardingStep >= 4`, plus legacy `onboardingStepsCompleted`. */
-export function isOnboardingFlowCompleteForNav(
-  d: UserData | null | undefined
-): boolean {
-  if (!d) return false;
-  const step = d.onboardingStep ?? 0;
-  const flutterDone = Boolean(d.onboardingCompletedAt) && step >= 4;
-  return flutterDone || Boolean(d.onboardingStepsCompleted);
-}
-
-/** Flutter `OnboardingStateEntity` completion from `onboarding_mapper.dart`. */
-export function isOnboardingEntityCompleted(
-  d: UserData | null | undefined
-): boolean {
-  if (!d) return false;
-  const step = d.onboardingStep ?? 0;
-  return Boolean(d.onboardingCompletedAt) && step >= 4;
-}
-
-/** Flutter `OnboardingCubit._nextUiStepFromBackendStep` including completed → 5. */
-export function nextUiOnboardingStepFromBackend(
-  backendStep: number,
-  entityCompleted: boolean
-): 1 | 2 | 3 | 4 | 5 {
-  if (entityCompleted) return 5;
-  const normalized = backendStep <= 0 ? 1 : backendStep + 1;
-  return (normalized > 5 ? 5 : normalized) as 1 | 2 | 3 | 4 | 5;
-}
+export {
+  isOnboardingFlowCompleteForNav,
+  isOnboardingEntityCompleted,
+  nextUiOnboardingStepFromBackend,
+  isSplashProfileComplete,
+} from "@/lib/auth/profileGate";
 
 function toAuthUserFromApi(
   uid: string,
@@ -1122,7 +1100,7 @@ export async function resendEmailVerificationToEmail(email: string): Promise<voi
 }
 
 export async function isProfileComplete(userId: string): Promise<boolean> {
-  const { isSplashProfileComplete } = await import("@/lib/auth/postLoginNavigation");
+  const { isSplashProfileComplete } = await import("@/lib/auth/profileGate");
   const userData = await getUserData(userId);
   return isSplashProfileComplete(userData);
 }

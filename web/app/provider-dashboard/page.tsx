@@ -21,7 +21,6 @@ export default function ProviderDashboardPage() {
   const router = useRouter();
   const { user, userData, loading: authLoading, refreshUserData } = useAuth();
   const [isAvailable, setIsAvailable] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState({
     myJobs: 0,
     completed: 0,
@@ -44,8 +43,7 @@ export default function ProviderDashboardPage() {
 
     try {
       console.log("[Dashboard] Starting to load dashboard data for user:", user.uid);
-      setIsLoading(true);
-      
+
       // Load availability status from canonical presence fields.
       let currentUserData = userData;
       if (
@@ -155,7 +153,6 @@ export default function ProviderDashboardPage() {
         stack: error instanceof Error ? error.stack : undefined
       });
     } finally {
-      setIsLoading(false);
       console.log("[Dashboard] Loading complete");
     }
   }, [user, userData]);
@@ -326,16 +323,6 @@ export default function ProviderDashboardPage() {
       setIsRefreshingTasks(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex min-h-screen items-center justify-center bg-white dark:bg-darkBlue-013">
-          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   const earningDisplay =
     metrics.totalEarning === 0

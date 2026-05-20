@@ -33,7 +33,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, userData, loading: authLoading, refreshUserData } = useAuth();
   const [isAvailable, setIsAvailable] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState({
     myJobs: 0,
     completed: 0,
@@ -201,8 +200,7 @@ export default function DashboardPage() {
 
     try {
       console.log("[Dashboard] Starting to load dashboard data for user:", user.uid);
-      setIsLoading(true);
-      
+
       // Load availability status from canonical presence fields.
       let currentUserData = userData;
       if (
@@ -312,26 +310,14 @@ export default function DashboardPage() {
         stack: error instanceof Error ? error.stack : undefined
       });
     } finally {
-      setIsLoading(false);
       console.log("[Dashboard] Loading complete");
     }
   }, [user, userData]);
 
   useEffect(() => {
-    console.log("[Dashboard] useEffect triggered - user:", !!user, "userData:", !!userData);
-    if (user && userData) {
-      if (effectiveUserMode(userData) === "client") {
-        setIsLoading(false);
-        return;
-      }
-      console.log("[Dashboard] Calling loadDashboardData");
-      loadDashboardData();
-    } else if (!user) {
-      console.log("[Dashboard] No user, setting loading to false");
-      setIsLoading(false);
-    } else {
-      console.log("[Dashboard] Waiting for userData...");
-    }
+    if (!user) return;
+    if (userData && effectiveUserMode(userData) === "client") return;
+    void loadDashboardData();
   }, [user, userData, loadDashboardData]);
 
   // Poll profile so availability stays in sync across tabs/sessions.
@@ -484,14 +470,6 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-transparent">
         <p className="text-gray-600 dark:text-gray-400">Opening client home…</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-transparent">
-        <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
       </div>
     );
   }

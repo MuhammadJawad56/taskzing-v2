@@ -98,12 +98,12 @@ export default function TermsConditionsPage() {
           title: isFrench ? "Conditions générales" : "General Terms & Conditions",
           content: isFrench ? (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Avis important</p>
-                    <p className="text-sm text-gray-900 dark:text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
+                    <p className="mb-1 font-semibold text-white">Avis important</p>
+                    <p className="text-sm text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
                   </div>
                 </div>
               </div>
@@ -147,12 +147,12 @@ export default function TermsConditionsPage() {
             </>
           ) : (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Important Notice</p>
-                    <p className="text-sm text-gray-900 dark:text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
+                    <p className="mb-1 font-semibold text-white">Important Notice</p>
+                    <p className="text-sm text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
                   </div>
                 </div>
               </div>
@@ -202,12 +202,12 @@ export default function TermsConditionsPage() {
           title: isFrench ? "Conditions des prestataires" : "Provider Terms & Conditions",
           content: isFrench ? (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Avis important</p>
-                    <p className="text-sm text-gray-900 dark:text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
+                    <p className="mb-1 font-semibold text-white">Avis important</p>
+                    <p className="text-sm text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
                   </div>
                 </div>
               </div>
@@ -265,12 +265,12 @@ export default function TermsConditionsPage() {
             </>
           ) : (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Important Notice</p>
-                    <p className="text-sm text-gray-900 dark:text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
+                    <p className="mb-1 font-semibold text-white">Important Notice</p>
+                    <p className="text-sm text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
                   </div>
                 </div>
               </div>
@@ -334,12 +334,12 @@ export default function TermsConditionsPage() {
           title: isFrench ? "Conditions des utilisateurs" : "User Terms & Conditions",
           content: isFrench ? (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Avis important</p>
-                    <p className="text-sm text-gray-900 dark:text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
+                    <p className="mb-1 font-semibold text-white">Avis important</p>
+                    <p className="text-sm text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
                   </div>
                 </div>
               </div>
@@ -383,12 +383,12 @@ export default function TermsConditionsPage() {
             </>
           ) : (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Important Notice</p>
-                    <p className="text-sm text-gray-900 dark:text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
+                    <p className="mb-1 font-semibold text-white">Important Notice</p>
+                    <p className="text-sm text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
                   </div>
                 </div>
               </div>
@@ -634,12 +634,12 @@ export default function TermsConditionsPage() {
           title: isFrench ? "Conditions des paramètres" : "Settings Terms & Conditions",
           content: isFrench ? (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Avis important</p>
-                    <p className="text-sm text-gray-900 dark:text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
+                    <p className="mb-1 font-semibold text-white">Avis important</p>
+                    <p className="text-sm text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
                   </div>
                 </div>
               </div>
@@ -683,12 +683,12 @@ export default function TermsConditionsPage() {
             </>
           ) : (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Important Notice</p>
-                    <p className="text-sm text-gray-900 dark:text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
+                    <p className="mb-1 font-semibold text-white">Important Notice</p>
+                    <p className="text-sm text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
                   </div>
                 </div>
               </div>
@@ -738,12 +738,12 @@ export default function TermsConditionsPage() {
           title: isFrench ? "Clauses légales" : "Legal Terms & Conditions",
           content: isFrench ? (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Avis important</p>
-                    <p className="text-sm text-gray-900 dark:text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
+                    <p className="mb-1 font-semibold text-white">Avis important</p>
+                    <p className="text-sm text-white">Ces termes et conditions sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes.</p>
                   </div>
                 </div>
               </div>
@@ -787,12 +787,12 @@ export default function TermsConditionsPage() {
             </>
           ) : (
             <>
-              <div className="mb-6 rounded-2xl border border-[#D94856]/25 bg-[#D94856]/8 p-4 dark:border-[#D94856]/35 dark:bg-[#C43D4C]">
+              <div className="mb-6 rounded-2xl border border-[#D94856]/35 bg-[#C43D4C] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D94856] text-xs font-bold text-white dark:bg-white/20">i</div>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">i</div>
                   <div>
-                    <p className="mb-1 font-semibold text-[#D94856] dark:text-white">Important Notice</p>
-                    <p className="text-sm text-gray-900 dark:text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
+                    <p className="mb-1 font-semibold text-white">Important Notice</p>
+                    <p className="text-sm text-white">These terms and conditions are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms.</p>
                   </div>
                 </div>
               </div>
@@ -906,17 +906,17 @@ export default function TermsConditionsPage() {
       </div>
 
       {/* Legal Notice */}
-      <Card className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
+      <Card className="mb-6 border border-[#D94856]/35 bg-[#C43D4C] dark:bg-[#C43D4C] dark:border-[#D94856]/35">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#D94856] flex items-center justify-center text-white font-bold text-xs">
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
               ⚠
             </div>
             <div>
-              <p className="font-semibold mb-1 text-theme-primaryText dark:text-white">
+              <p className="mb-1 font-semibold text-white">
                 {language === "french" ? "Avis légal" : "Legal Notice"}
               </p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
+              <p className="text-sm text-white">
                 {language === "french"
                   ? "Ces termes sont régis par les lois canadiennes et américaines et sont conformes aux règlements provinciaux, étatiques et fédéraux applicables dans les deux pays. En utilisant TaskZing, vous acceptez d'être lié par ces termes. Pour toute question concernant ces termes, veuillez nous contacter à legal@taskzing.com"
                   : "These terms are governed by Canadian and United States laws and comply with applicable provincial, state, and federal regulations in both countries. By using TaskZing, you agree to be bound by these terms. For questions about these terms, please contact us at legal@taskzing.com"}
@@ -971,7 +971,7 @@ export default function TermsConditionsPage() {
             </div>
 
             {/* Scrollable Content */}
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 text-gray-900 dark:text-slate-300 [scrollbar-width:thin] [scrollbar-color:#5c6eac_#20366f] dark:[scrollbar-color:#8ea0d6_#1b2f63] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-[#20366f] dark:[&::-webkit-scrollbar-track]:bg-[#1b2f63] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#5c6eac] dark:[&::-webkit-scrollbar-thumb]:bg-[#8ea0d6]">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 text-gray-900 dark:text-slate-300 [scrollbar-width:thin] [scrollbar-color:#d1d5db_#ffffff] dark:[scrollbar-color:#8ea0d6_#1b2f63] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white dark:[&::-webkit-scrollbar-track]:bg-[#1b2f63] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d1d5db] dark:[&::-webkit-scrollbar-thumb]:bg-[#8ea0d6]">
               {termsContent.content}
             </div>
 

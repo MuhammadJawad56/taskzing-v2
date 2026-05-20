@@ -35,16 +35,16 @@ export function OnlineStatusNoticeModal({
           <li>Do your job to the best of your ability</li>
         </ul>
 
-        <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-400/40 dark:bg-amber-900/20">
+        <div className="mb-5 rounded-2xl border border-red-300 bg-red-600 p-4 dark:border-red-700 dark:bg-red-900/90">
           <div className="mb-2 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <p className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">Important Warning:</p>
+            <AlertTriangle className="h-5 w-5 shrink-0 text-white" />
+            <p className="text-xl font-bold text-white sm:text-2xl">Important Warning:</p>
           </div>
-          <p className="mb-2 text-base text-gray-800 dark:text-gray-200">
+          <p className="mb-2 text-base text-white">
             If you fail to respond to clients or change your location repeatedly, you will be responsible for the
             consequences including:
           </p>
-          <ul className="ml-6 list-disc text-base text-gray-800 dark:text-gray-200">
+          <ul className="ml-6 list-disc text-base text-white">
             <li>Termination of account</li>
             <li>Blacklist of email</li>
           </ul>

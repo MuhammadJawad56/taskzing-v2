@@ -15,9 +15,9 @@
     --app-muted: #6b7280;
     --app-border: #000000;
 
-    --scrollbar-track: #f3f4f6;
-    --scrollbar-thumb: #c5cdd4;
-    --scrollbar-thumb-hover: #57636c;
+    --scrollbar-track: #ffffff;
+    --scrollbar-thumb: #d1d5db;
+    --scrollbar-thumb-hover: #9ca3af;
   }
 
   /* App theme tokens (DARK = blue theme like old sidebar) */

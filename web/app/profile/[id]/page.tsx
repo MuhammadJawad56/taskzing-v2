@@ -12,6 +12,7 @@ import {
   MessageSquare,
   CheckCircle2,
   Bookmark,
+  Heart,
 } from "lucide-react";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileJobsFilterBar } from "@/components/profile/ProfileJobsFilterBar";
@@ -33,6 +34,8 @@ import {
   type ProfileTabId,
   resolveProfileFollowUserId,
 } from "@/lib/profile/profileHelpers";
+import { ProviderExploreJobCard } from "@/components/task/ProviderExploreJobCard";
+import { ExploreJobCard } from "@/components/task/ExploreJobCard";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -41,10 +44,18 @@ import { getJobsByClientId } from "@/lib/api/jobs";
 import {
   bookmarkShowcase,
   getBookmarkedShowcaseIds,
+  getShowcaseItem,
   getUserShowcases,
   type ShowcaseItem,
   unbookmarkShowcase,
 } from "@/lib/api/showcase";
+import { getJobById } from "@/lib/api/jobs";
+import {
+  getUserLikedJobIds,
+  getUserLikedShowcaseIds,
+  unlikeJob,
+  unlikeShowcase,
+} from "@/lib/api/likes";
 import { useAuth } from "@/lib/api/AuthContext";
 import { cn } from "@/lib/utils/cn";
 import { getOrCreateChatRoom } from "@/lib/api/messages";
@@ -87,6 +98,11 @@ export default function ProfilePage() {
   const [savedShowcaseIds, setSavedShowcaseIds] = useState<Set<string>>(new Set());
   const [savingShowcaseId, setSavingShowcaseId] = useState<string | null>(null);
   const [contactingShowcaseId, setContactingShowcaseId] = useState<string | null>(null);
+  const [likedShowcases, setLikedShowcases] = useState<ShowcaseItem[]>([]);
+  const [likedJobs, setLikedJobs] = useState<Task[]>([]);
+  const [likedItemsLoading, setLikedItemsLoading] = useState(false);
+  const [likingJobId, setLikingJobId] = useState<string | null>(null);
+  const [likingShowcaseId, setLikingShowcaseId] = useState<string | null>(null);
   const userId = params?.id as string;
   const followTargetUserId = useMemo(
     () => resolveProfileFollowUserId(profileUser, userId),
@@ -104,7 +120,7 @@ export default function ProfilePage() {
   );
   const viewedRole = useMemo(() => getViewedProfileRole(profileUser), [profileUser]);
   const profileTabIds = useMemo(
-    () => buildProfileTabs(viewerRole, viewedRole),
+    () => buildProfileTabs(viewerRole, viewedRole, isOwnProfile),
     [viewerRole, viewedRole, isOwnProfile],
   );
 
@@ -199,6 +215,38 @@ export default function ProfilePage() {
     };
   }, [activeTab, userId]);
 
+  useEffect(() => {
+    if (activeTab !== "liked" || !isOwnProfile || !currentUser?.uid) return;
+    let cancelled = false;
+    (async () => {
+      setLikedItemsLoading(true);
+      try {
+        const [showcaseIds, jobIds] = await Promise.all([
+          getUserLikedShowcaseIds(currentUser.uid),
+          getUserLikedJobIds(currentUser.uid),
+        ]);
+        const [showcaseResults, jobResults] = await Promise.all([
+          Promise.all(showcaseIds.map((id) => getShowcaseItem(id).catch(() => null))),
+          Promise.all(jobIds.map((id) => getJobById(id).catch(() => null))),
+        ]);
+        if (!cancelled) {
+          setLikedShowcases(showcaseResults.filter((s): s is ShowcaseItem => s !== null));
+          setLikedJobs(jobResults.filter((j): j is Task => j !== null));
+        }
+      } catch (e) {
+        console.error("Failed to load liked items:", e);
+        if (!cancelled) {
+          setLikedShowcases([]);
+          setLikedJobs([]);
+        }
+      } finally {
+        if (!cancelled) setLikedItemsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, isOwnProfile, currentUser?.uid]);
 
   useEffect(() => {
     if (!profileUser) return;
@@ -347,9 +395,63 @@ export default function ProfilePage() {
             ? t("profile.jobs")
             : id === "showcases"
               ? t("profile.showcases")
-              : t("profile.reviews"),
+              : id === "liked"
+                ? t("profile.liked")
+                : t("profile.reviews"),
       })),
     [profileTabIds, t],
+  );
+
+  const viewerIsProvider = isProviderRole(viewerRole);
+
+  const unlikeLikedJob = useCallback(
+    async (task: Task) => {
+      if (!currentUser?.uid) return;
+      setLikingJobId(task.jobId);
+      try {
+        await unlikeJob(currentUser.uid, task.jobId);
+        setLikedJobs((prev) => prev.filter((j) => j.jobId !== task.jobId));
+      } catch (err) {
+        console.error("Failed to unlike job:", err);
+      } finally {
+        setLikingJobId(null);
+      }
+    },
+    [currentUser?.uid],
+  );
+
+  const handleLikedJobUnlike = useCallback(
+    (task: Task) => (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void unlikeLikedJob(task);
+    },
+    [unlikeLikedJob],
+  );
+
+  const unlikeLikedShowcase = useCallback(
+    async (item: ShowcaseItem) => {
+      if (!currentUser?.uid || !item.id) return;
+      setLikingShowcaseId(item.id);
+      try {
+        await unlikeShowcase(currentUser.uid, item.id);
+        setLikedShowcases((prev) => prev.filter((s) => s.id !== item.id));
+      } catch (err) {
+        console.error("Failed to unlike showcase:", err);
+      } finally {
+        setLikingShowcaseId(null);
+      }
+    },
+    [currentUser?.uid],
+  );
+
+  const handleLikedShowcaseUnlike = useCallback(
+    (item: ShowcaseItem) => (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void unlikeLikedShowcase(item);
+    },
+    [unlikeLikedShowcase],
   );
 
   const jobFilterOptions: { id: ProfileJobFilter; label: string }[] = [
@@ -1113,58 +1215,119 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Legacy liked-tab UI (not in Flutter profile) — keep disabled
-        {false && activeTab === "liked" && (
-          <div className="rounded-none bg-white px-4 py-4 dark:bg-transparent lg:rounded-lg lg:p-6 dark:lg:bg-transparent">
-            {savedItemsLoading ? (
-              <div className="text-center py-8 text-theme-accent4">Loading liked items...</div>
+        {activeTab === "liked" && isOwnProfile && (
+          <div className="min-h-[45vh] rounded-none bg-white px-4 py-6 dark:bg-transparent lg:rounded-lg lg:p-6 dark:lg:bg-transparent">
+            {likedItemsLoading ? (
+              <p className="py-8 text-center text-gray-500 dark:text-white/70">
+                {t("profile.loadingLiked")}
+              </p>
             ) : (
-              <div className="space-y-8">
-                <section>
-                  <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Liked Jobs</h3>
-                  {savedJobs.length === 0 ? (
-                    <p className="text-theme-accent4 py-2">No liked jobs yet.</p>
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-6">
+                <section className="min-w-0">
+                  <h3 className="mb-3 border-b border-gray-200 pb-2 text-sm font-semibold text-gray-900 dark:border-white/10 dark:text-white">
+                    {t("profile.likedShowcaseColumn")}
+                  </h3>
+                  {likedShowcases.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-gray-500 dark:text-white/70">
+                      {t("profile.noLikedShowcases")}
+                    </p>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
-                      {savedJobs.map((job) => (
-                        <ProviderExploreJobCard
-                          key={job.jobId}
-                          task={job}
-                          saved={bookmarkJobIdSet.has(job.jobId)}
-                          onToggleSave={handleLikedTabJobSaveToggle(job)}
-                          liked
-                          likesCount={job.likesCount ?? 0}
-                          likePending={likingJobId === job.jobId}
-                          onToggleLike={handleLikedTabJobUnlike(job)}
-                        />
-                      ))}
-                    </div>
+                    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                      {likedShowcases.map((item) => {
+                        const image = item.imageUrls?.[0];
+                        const title = item.title || "Showcase";
+                        const skill = showcaseSkillPill(item);
+                        return (
+                          <li key={item.id}>
+                            <div className="relative h-full w-full overflow-hidden rounded-[18px] border border-gray-200 bg-white text-left shadow-[0_6px_14px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-darkBlue-203/50">
+                              <button
+                                type="button"
+                                onClick={(e) => void handleLikedShowcaseUnlike(item)(e)}
+                                disabled={likingShowcaseId === item.id}
+                                aria-label="Unlike showcase"
+                                className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/50 disabled:opacity-70"
+                              >
+                                <Heart className="h-4 w-4 fill-[#FF2D2D] text-[#FF2D2D]" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openShowcase(item)}
+                                className="block h-full w-full text-left"
+                              >
+                              <div className="relative h-28 w-full bg-gray-200 dark:bg-darkBlue-013">
+                                {image ? (
+                                  <img
+                                    src={image}
+                                    alt={title}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : null}
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+                                <p className="absolute bottom-2 left-2 right-10 line-clamp-2 text-lg font-semibold leading-tight text-white">
+                                  {title}
+                                </p>
+                              </div>
+                              <div className="px-3 pb-3 pt-2">
+                                <p className="line-clamp-1 text-base font-bold text-gray-900 dark:text-white">
+                                  {title}
+                                </p>
+                                <div className="mt-1 flex items-center gap-1 text-xs text-gray-500 dark:text-white/70">
+                                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="line-clamp-1">
+                                    {item.location || "Location unavailable"}
+                                  </span>
+                                </div>
+                                <div className="mt-2">
+                                  <span className={flutterProfileSkillChipSm}>{skill}</span>
+                                </div>
+                              </div>
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   )}
                 </section>
 
-                <section>
-                  <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Liked Showcases</h3>
-                  {savedShowcases.length === 0 ? (
-                    <p className="text-theme-accent4 py-2">No liked showcases yet.</p>
+                <section className="min-w-0">
+                  <h3 className="mb-3 border-b border-gray-200 pb-2 text-sm font-semibold text-gray-900 dark:border-white/10 dark:text-white">
+                    {t("profile.likedJobsColumn")}
+                  </h3>
+                  {likedJobs.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-gray-500 dark:text-white/70">
+                      {t("profile.noLikedJobs")}
+                    </p>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-                      {savedShowcases.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => router.push(`/work-details/${item.id}`)}
-                          className="w-full overflow-hidden rounded-2xl border border-black/10 bg-[#F6F6F6] text-left shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#efefef] dark:border-white/10 dark:bg-darkBlue-203 dark:hover:bg-darkBlue-343/70"
-                        >
-                          {item.imageUrls?.[0] ? (
-                            <img src={item.imageUrls[0]} alt={item.title || "Showcase"} className="h-28 w-full object-cover" loading="lazy" />
-                          ) : null}
-                          <div className="p-4">
-                            <p className="line-clamp-1 text-sm font-semibold text-gray-900 dark:text-white">{item.title || "Showcase"}</p>
-                            <p className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-white/80">{item.description || "No description"}</p>
-                            <p className="mt-2 line-clamp-1 text-xs text-gray-700 dark:text-white/90">{item.location || "Location unavailable"}</p>
-                          </div>
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                      {likedJobs.map((job) =>
+                        viewerIsProvider ? (
+                          <ProviderExploreJobCard
+                            key={job.jobId}
+                            task={job}
+                            saved={false}
+                            onToggleSave={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            liked
+                            likesCount={job.likesCount ?? 0}
+                            likePending={likingJobId === job.jobId}
+                            onToggleLike={handleLikedJobUnlike(job)}
+                          />
+                        ) : (
+                          <ExploreJobCard
+                            key={job.jobId}
+                            job={job}
+                            onApply={() => {}}
+                            liked
+                            likesCount={job.likesCount ?? 0}
+                            likePending={likingJobId === job.jobId}
+                            onLike={() => void unlikeLikedJob(job)}
+                          />
+                        ),
+                      )}
                     </div>
                   )}
                 </section>
@@ -1172,7 +1335,6 @@ export default function ProfilePage() {
             )}
           </div>
         )}
-        */}
 
 
         {profileUser ? (

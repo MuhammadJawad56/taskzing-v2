@@ -2,13 +2,15 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { useAuth } from "@/lib/api/AuthContext";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
+
+const SUPPORT_EMAIL = "customercare@taskzing.com";
 
 const deactivationReasons = [
   "I have a duplicate or second account.",
@@ -21,9 +23,9 @@ const deactivationReasons = [
   "Other (please specify)",
 ];
 
-export default function AccountDeactivationPage() {
+export default function AccountDeletionPage() {
   const router = useRouter();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const { t } = useLanguage();
   const [selectedReason, setSelectedReason] = useState<string>("");
   const [otherReason, setOtherReason] = useState("");
@@ -41,12 +43,12 @@ export default function AccountDeactivationPage() {
 
   const resolvedReason = isOtherSelected ? otherReason.trim() : selectedReason;
 
-  const handleDeactivate = async () => {
+  const handleRequestDeletion = async () => {
     setIsSubmitting(true);
     setError(null);
     try {
-      console.info("[Account deactivation] Reason:", {
-        userId: user?.uid,
+      // Flutter parity: local dummy success, then sign out.
+      console.info("[Account deletion] Request recorded:", {
         reason: resolvedReason,
         timestamp: new Date().toISOString(),
       });
@@ -54,12 +56,12 @@ export default function AccountDeactivationPage() {
       if (typeof document !== "undefined") {
         document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       }
-      alert(t("settings.deactivationSuccess"));
-      window.location.href = "/login";
+      alert(t("settings.deletionSuccess"));
+      window.location.href = "/";
     } catch (e) {
-      console.error("Error deactivating account:", e);
+      console.error("Account deletion request failed:", e);
       setError(
-        `${t("settings.deactivationFailed")}: ${e instanceof Error ? e.message : "Unknown error"}`,
+        `${t("settings.deletionFailed")}: ${e instanceof Error ? e.message : "Unknown error"}`,
       );
     } finally {
       setIsSubmitting(false);
@@ -67,17 +69,25 @@ export default function AccountDeactivationPage() {
     }
   };
 
+  const handleEmailRequest = () => {
+    const subject = encodeURIComponent(t("settings.deletionEmailSubject"));
+    const body = encodeURIComponent(t("settings.deletionEmailBody"));
+    const mailto = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+    window.location.href = mailto;
+    alert(t("settings.deletionEmailOpened"));
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
       <ConfirmDialog
         open={showConfirm}
-        title={t("settings.deactivationConfirmTitle")}
-        message={`${t("settings.deactivationConfirmMessage")}\n\nReason: ${resolvedReason}`}
+        title={t("settings.deletionConfirmTitle")}
+        message={t("settings.deletionConfirmMessage")}
         cancelLabel={t("settings.cancel")}
-        confirmLabel={t("settings.deactivate")}
+        confirmLabel={t("settings.deletionConfirmButton")}
         confirmVariant="danger"
         onCancel={() => setShowConfirm(false)}
-        onConfirm={() => void handleDeactivate()}
+        onConfirm={() => void handleRequestDeletion()}
       />
 
       <div className="mb-6">
@@ -90,11 +100,14 @@ export default function AccountDeactivationPage() {
           <span>{t("settings.changePassword.back")}</span>
         </button>
         <h1 className="text-3xl font-bold text-theme-primaryText dark:text-white">
-          {t("settings.accountDeactivation")}
+          {t("settings.accountDeletion")}
         </h1>
-        <p className="text-theme-accent4 mt-2">
-          Select a Reason for Deactivating Your Account
-        </p>
+        <p className="text-theme-accent4 mt-2">{t("settings.deletionReasonTitle")}</p>
+      </div>
+
+      <div className="mb-6 flex gap-3 rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-500/30 dark:bg-orange-900/20">
+        <Info className="h-5 w-5 shrink-0 text-orange-600 dark:text-orange-300" />
+        <p className="text-sm text-gray-800 dark:text-white/90">{t("settings.deletionInfo")}</p>
       </div>
 
       {error ? (
@@ -119,11 +132,11 @@ export default function AccountDeactivationPage() {
                 >
                   <input
                     type="radio"
-                    name="deactivationReason"
+                    name="deletionReason"
                     value={reason}
                     checked={selectedReason === reason}
                     onChange={(e) => setSelectedReason(e.target.value)}
-                    className="mt-1 h-5 w-5 text-primary-500 border-2 border-primary-500 focus:ring-primary-500 focus:ring-2 cursor-pointer"
+                    className="mt-1 h-5 w-5 text-primary-500 border-2 border-primary-500 focus:ring-primary-500 focus:ring-2 cursor-pointer accent-primary-500"
                     style={{ accentColor: "#ef4444" }}
                   />
                   <span className="flex-1 text-theme-primaryText dark:text-white group-hover:text-primary-500 transition-colors">
@@ -165,21 +178,41 @@ export default function AccountDeactivationPage() {
               </div>
             ) : null}
 
-            <div className="flex justify-center pt-4">
+            <div className="flex flex-col items-center gap-4 pt-4 sm:flex-row sm:justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push("/dashboard/settings")}
+              >
+                {t("settings.cancel")}
+              </Button>
               <Button
                 type="submit"
                 variant={isValid ? "primary" : "outline"}
                 size="lg"
                 disabled={!isValid || isSubmitting}
                 isLoading={isSubmitting}
-                className="min-w-[120px]"
+                className="min-w-[200px]"
               >
-                {t("settings.deactivate")}
+                {t("settings.requestPermanentDeletion")}
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      <div className="mt-8 text-center">
+        <p className="text-sm text-theme-accent4 dark:text-white/70">
+          {t("settings.deletionEmailHint")}
+        </p>
+        <button
+          type="button"
+          onClick={handleEmailRequest}
+          className="mt-2 text-sm font-semibold text-theme-primaryText underline dark:text-white"
+        >
+          {SUPPORT_EMAIL}
+        </button>
+      </div>
     </div>
   );
 }

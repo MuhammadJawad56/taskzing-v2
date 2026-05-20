@@ -1,6 +1,6 @@
 import type { User } from "@/lib/types/user";
 
-export type ProfileTabId = "jobs" | "showcases" | "reviews";
+export type ProfileTabId = "jobs" | "showcases" | "liked" | "reviews";
 export type ProfileJobFilter = "all" | "active" | "complete";
 
 export function normalizeRole(role?: string | null): string {
@@ -36,10 +36,17 @@ export function shouldShowShowcasesTab(
   return viewedIsProvider;
 }
 
-export function buildProfileTabs(viewerRole: string, viewedRole: string): ProfileTabId[] {
+export function buildProfileTabs(
+  viewerRole: string,
+  viewedRole: string,
+  isOwnProfile = false,
+): ProfileTabId[] {
   const tabs: ProfileTabId[] = ["jobs"];
   if (shouldShowShowcasesTab(viewerRole, viewedRole)) {
     tabs.push("showcases");
+  }
+  if (isOwnProfile) {
+    tabs.push("liked");
   }
   tabs.push("reviews");
   return tabs;
@@ -49,7 +56,7 @@ export function getDefaultProfileTab(
   viewerRole: string,
   viewedRole: string,
 ): ProfileTabId {
-  const tabs = buildProfileTabs(viewerRole, viewedRole);
+  const tabs = buildProfileTabs(viewerRole, viewedRole, false);
   if (isProviderRole(viewerRole) && isProviderRole(viewedRole) && tabs.includes("jobs")) {
     return "jobs";
   }

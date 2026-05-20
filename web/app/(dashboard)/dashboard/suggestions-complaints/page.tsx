@@ -6,9 +6,15 @@ import { ArrowLeft, Camera, X } from "lucide-react";
 import { useAuth } from "@/lib/api/AuthContext";
 import { resolveProfileDisplayName } from "@/lib/api/auth";
 import { cn } from "@/lib/utils/cn";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
+import {
+  getPlatformName,
+  saveFeedbackSubmission,
+} from "@/lib/settings/feedbackStorage";
 
 export default function SuggestionsComplaintsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { user, userData, loading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [feedbackType, setFeedbackType] = useState<"suggestion" | "complaint">("complaint");
@@ -71,23 +77,28 @@ export default function SuggestionsComplaintsPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement feedback submission to Firestore or API
-      // Upload images to Firebase Storage if needed
-      // For now, we'll just show a success message
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-      
-      alert("Thank you for your feedback! We'll review it and get back to you soon.");
-      
-      // Reset form
+      saveFeedbackSubmission({
+        type: feedbackType,
+        subject: subject.trim(),
+        message: message.trim(),
+        userEmail: userEmail.trim(),
+        userName: userName.trim(),
+        platform: getPlatformName(),
+        hasImages: images.length > 0,
+        imageCount: images.length,
+        userId: user?.uid || "",
+      });
+
+      alert(t("settings.feedbackSuccess"));
+
       setSubject("");
       setMessage("");
       setFeedbackType("complaint");
       setImages([]);
       imagePreviews.forEach((url) => URL.revokeObjectURL(url));
       setImagePreviews([]);
-      
-      // Optionally redirect back to settings
-      // router.push("/dashboard/settings");
+
+      router.push("/dashboard/settings");
     } catch (error) {
       console.error("Error submitting feedback:", error);
       alert("An error occurred. Please try again.");

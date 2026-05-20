@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Map, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { getOpenJobs } from "@/lib/api/jobs";
 import type { Task } from "@/lib/types/task";
 import { useAuth } from "@/lib/api/AuthContext";
@@ -419,13 +418,6 @@ export default function ProviderExplorePage() {
                 );
               })}
             </div>
-            <Link
-              href="/googlemap?focus=jobs&locate=1"
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
-            >
-              <Map className="h-4 w-4" />
-              Map
-            </Link>
           </div>
 
           {/* Desktop title */}

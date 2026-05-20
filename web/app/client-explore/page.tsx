@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Map, Bookmark, SlidersHorizontal, ChevronDown, MapPin, MessageSquare, Heart } from "lucide-react";
+import { Bookmark, SlidersHorizontal, ChevronDown, MapPin, MessageSquare, Heart } from "lucide-react";
 import {
   getAllShowcases,
   formatShowcaseLoadError,
@@ -871,13 +870,6 @@ export default function ClientExplorePage() {
                 </button>
               ))}
             </div>
-            <Link
-              href="/googlemap?focus=showcases&locate=1"
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
-            >
-              <Map className="h-4 w-4" />
-              Map
-            </Link>
           </div>
         </div>
 

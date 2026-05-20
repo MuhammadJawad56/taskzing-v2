@@ -9,7 +9,14 @@ import React, {
   useCallback,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { onAuthChange, getUserData, signOut, AuthUser, UserData } from "./auth";
+import {
+  onAuthChange,
+  getUserData,
+  signOut,
+  syncAuthSessionCookie,
+  AuthUser,
+  UserData,
+} from "./auth";
 import { isPublicRoute } from "@/lib/auth/routeAccess";
 
 interface AuthContextType {
@@ -39,6 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Use router hooks - must be called unconditionally
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    syncAuthSessionCookie();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

@@ -195,9 +195,16 @@ export function peekPendingVerifyEmail(): string | null {
   return sessionStorage.getItem(PENDING_VERIFY_EMAIL_KEY);
 }
 
-function clearAuthCookie() {
+export function clearAuthCookie() {
   if (typeof document === "undefined") return;
   document.cookie = "auth-token=; path=/; max-age=0; samesite=lax";
+}
+
+/** Drop stale middleware cookie when JWT is missing (cookie alone must not imply a session). */
+export function syncAuthSessionCookie(): void {
+  if (typeof document === "undefined") return;
+  const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  if (!token?.trim()) clearAuthCookie();
 }
 
 export function setAuthCookie(user: AuthUser): void {
@@ -365,6 +372,34 @@ export function apiRecordToUserData(raw: unknown, uid: string): UserData {
     pendingFullNameRequestedAt: coerceDate(r.pendingFullNameRequestedAt),
     createdAt: coerceDate(r.createdAt) || new Date().toISOString(),
     updatedAt: coerceDate(r.updatedAt) || new Date().toISOString(),
+    onboarding: parseProfileOnboardingMeta(r),
+  };
+}
+
+function parseProfileOnboardingMeta(
+  r: Record<string, unknown>
+): UserData["onboarding"] | undefined {
+  const raw = r.onboarding ?? r.onboardingMeta;
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  return {
+    profileComplete:
+      typeof o.profileComplete === "boolean"
+        ? o.profileComplete
+        : typeof o.profile_complete === "boolean"
+          ? o.profile_complete
+          : undefined,
+    missingFields: Array.isArray(o.missingFields)
+      ? (o.missingFields as unknown[]).map(String)
+      : Array.isArray(o.missing_fields)
+        ? (o.missing_fields as unknown[]).map(String)
+        : undefined,
+    lockedFields: Array.isArray(o.lockedFields)
+      ? (o.lockedFields as unknown[]).map(String)
+      : undefined,
+    editableFields: Array.isArray(o.editableFields)
+      ? (o.editableFields as unknown[]).map(String)
+      : undefined,
   };
 }
 
@@ -1087,27 +1122,9 @@ export async function resendEmailVerificationToEmail(email: string): Promise<voi
 }
 
 export async function isProfileComplete(userId: string): Promise<boolean> {
+  const { isSplashProfileComplete } = await import("@/lib/auth/postLoginNavigation");
   const userData = await getUserData(userId);
-  if (!userData) return false;
-
-  const hasBasicProfile = !!(
-    userData.email &&
-    (userData.fullName || userData.name) &&
-    userData.username &&
-    userData.location
-  );
-
-  const isProviderRole =
-    userData.role === "provider" ||
-    userData.role === "client+provider" ||
-    userData.role === "both" ||
-    userData.currentRole === "provider";
-
-  if (isProviderRole) {
-    return hasBasicProfile && !!(userData.description || userData.bio || userData.about);
-  }
-
-  return hasBasicProfile;
+  return isSplashProfileComplete(userData);
 }
 
 function userPatchToApi(data: Partial<UserData>): Record<string, unknown> {

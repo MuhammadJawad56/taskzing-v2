@@ -41,7 +41,8 @@ import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/api/AuthContext";
 import { useAvailabilityLinkedStatusDot } from "@/lib/hooks/useAvailabilityLinkedStatusDot";
-import { isProfileComplete } from "@/lib/api/users";
+import { getUserData, isOnboardingFlowCompleteForNav } from "@/lib/api/auth";
+import { isSplashProfileComplete } from "@/lib/auth/postLoginNavigation";
 import {
   becomeProviderWithProfile,
   resolveProfileDisplayName,
@@ -454,23 +455,35 @@ export const DashboardLayout: React.FC<{
   };
 
 
-  // Check profile completion and redirect if needed
+  // Flutter nav gate: onboarding → initial profile → app (use cached userData when possible)
   useEffect(() => {
-    if (authLoading || !user || pathname === "/initial-profile") return;
-    
-    const checkProfile = async () => {
+    if (authLoading || !user) return;
+    if (
+      pathname === "/initial-profile" ||
+      pathname === "/initial-profile-steps" ||
+      pathname?.startsWith("/email-confirmation")
+    ) {
+      return;
+    }
+
+    const gate = async () => {
       try {
-        const profileComplete = await isProfileComplete(user.uid);
-        if (!profileComplete) {
-          router.push("/initial-profile");
+        const data = userData ?? (await getUserData(user.uid));
+        if (!data) return;
+        if (!isOnboardingFlowCompleteForNav(data)) {
+          router.replace("/initial-profile-steps");
+          return;
+        }
+        if (!isSplashProfileComplete(data)) {
+          router.replace("/initial-profile");
         }
       } catch (error) {
         console.error("Error checking profile completion:", error);
       }
     };
-    
-    checkProfile();
-  }, [user, authLoading, pathname, router]);
+
+    void gate();
+  }, [user, userData, authLoading, pathname, router]);
   
   const desktopItems = useMemo(() => {
     const items =

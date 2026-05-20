@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import {
-  isAuthEntryRoute,
-  isPublicRoute,
-} from "@/lib/auth/routeAccess";
+import { isPublicRoute } from "@/lib/auth/routeAccess";
 
 function isAuthenticated(request: NextRequest): boolean {
   const token = request.cookies.get("auth-token");
@@ -35,14 +32,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Public routes (login/signup/landing): do not redirect based on auth-token cookie alone.
+  // Cookie can outlive JWT in localStorage; client validates session via /auth/me (see syncAuthSessionCookie).
   if (isPublicRoute(pathname)) {
-    if (isAuthenticated(request) && isAuthEntryRoute(pathname)) {
-      const param =
-        request.nextUrl.searchParams.get("redirect") ||
-        request.nextUrl.searchParams.get("next");
-      const dest = safeInternalRedirect(param) ?? "/dashboard";
-      return NextResponse.redirect(new URL(dest, request.url));
-    }
     return NextResponse.next();
   }
 

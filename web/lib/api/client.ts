@@ -39,6 +39,13 @@ export interface UserData {
   onboardingStep?: number;
   /** ISO — set when onboarding flow is finished on the server. */
   onboardingCompletedAt?: string;
+  /** Flutter `ProfileOnboardingMeta` from `/auth/me`. */
+  onboarding?: {
+    profileComplete?: boolean;
+    missingFields?: string[];
+    lockedFields?: string[];
+    editableFields?: string[];
+  };
   isAvailableForWork?: boolean;
   /** Flutter provider dashboard availability key */
   availableFW?: boolean;

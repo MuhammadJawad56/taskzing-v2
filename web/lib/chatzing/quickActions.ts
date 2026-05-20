@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Briefcase,
-  Grid3X3,
+  MapPinned,
   TrendingUp,
   PlusCircle,
 } from "lucide-react";
@@ -21,8 +21,8 @@ export type ChatzingQuickAction = {
 };
 
 export const CHATZING_QUICK_ACTIONS: ChatzingQuickAction[] = [
-  { id: "nearby_jobs", icon: Briefcase, usesChat: true },
-  { id: "nearby_showcases", icon: Grid3X3, usesChat: true },
+  { id: "nearby_jobs", icon: MapPinned, usesChat: true },
+  { id: "nearby_showcases", icon: Briefcase, usesChat: true },
   { id: "local_demand", icon: TrendingUp, usesChat: true },
   { id: "post_job", icon: PlusCircle, usesChat: true },
   { id: "post_showcase", icon: PlusCircle, usesChat: true },

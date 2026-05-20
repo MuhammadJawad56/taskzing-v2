@@ -19,7 +19,8 @@ import {
   type TwoFactorLoginChallenge,
 } from "@/lib/api/auth";
 import { isBackendConfigured } from "@/lib/backendConfig";
-import { isProfileComplete } from "@/lib/api/users";
+import { getCurrentUser, getUserData } from "@/lib/api/auth";
+import { navigateAfterAuth } from "@/lib/auth/postLoginNavigation";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import {
   AuthShell,
@@ -36,8 +37,7 @@ function LoginPageContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/dashboard";
-  const postLoginRoute = "/client-explore";
+  const redirect = searchParams.get("redirect");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -61,23 +61,35 @@ function LoginPageContent() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const existing = await getCurrentUser();
+      if (cancelled || !existing) return;
+      const data = await getUserData(existing.uid);
+      if (cancelled) return;
+      await navigateAfterAuth(router, existing, data, {
+        redirect,
+        replace: true,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, redirect]);
+
+  useEffect(() => {
     handleOAuthRedirect()
       .then(async (result) => {
         if (result) {
           setAuthCookie(result.user);
-          const profileComplete = await isProfileComplete(result.user.uid);
-          if (!profileComplete) {
-            router.push("/initial-profile-steps");
-            return;
-          }
-          router.push(postLoginRoute);
+          await navigateAfterAuth(router, result.user, undefined, { redirect });
         }
       })
       .catch((err) => {
         const msg = getSocialSignInErrorMessage(err, t);
         if (msg) setError(msg);
       });
-  }, [router, postLoginRoute, t]);
+  }, [router, redirect, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,15 +136,7 @@ function LoginPageContent() {
       }
 
       setAuthCookie(userCredential.user);
-
-      const profileComplete = await isProfileComplete(
-        userCredential.user.uid
-      );
-      if (!profileComplete) {
-        router.push("/initial-profile-steps");
-        return;
-      }
-      router.push(postLoginRoute);
+      await navigateAfterAuth(router, userCredential.user, undefined, { redirect });
     } catch (err) {
       if (err instanceof AuthError && err.code === "auth/email-not-verified") {
         router.push(
@@ -164,12 +168,7 @@ function LoginPageContent() {
       setTwoFaCode("");
       setTwoFaBackupCode("");
       setTwoFaUseBackup(false);
-      const profileComplete = await isProfileComplete(userCredential.user.uid);
-      if (!profileComplete) {
-        router.push("/initial-profile-steps");
-        return;
-      }
-      router.push(postLoginRoute);
+      await navigateAfterAuth(router, userCredential.user, undefined, { redirect });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.errorOccurred"));
     } finally {
@@ -188,12 +187,7 @@ function LoginPageContent() {
         return;
       }
       setAuthCookie(userCredential.user);
-      const profileComplete = await isProfileComplete(userCredential.user.uid);
-      if (!profileComplete) {
-        router.push("/initial-profile-steps");
-        return;
-      }
-      router.push(postLoginRoute);
+      await navigateAfterAuth(router, userCredential.user, undefined, { redirect });
     } catch (err) {
       if (err instanceof AuthError && err.code === OAUTH_REDIRECT_PENDING_CODE) {
         return;
@@ -217,12 +211,7 @@ function LoginPageContent() {
         return;
       }
       setAuthCookie(userCredential.user);
-      const profileComplete = await isProfileComplete(userCredential.user.uid);
-      if (!profileComplete) {
-        router.push("/initial-profile-steps");
-        return;
-      }
-      router.push(postLoginRoute);
+      await navigateAfterAuth(router, userCredential.user, undefined, { redirect });
     } catch (err) {
       if (err instanceof AuthError && err.code === OAUTH_REDIRECT_PENDING_CODE) {
         return;

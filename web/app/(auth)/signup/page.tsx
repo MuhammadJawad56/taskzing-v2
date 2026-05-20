@@ -15,7 +15,7 @@ import {
   isTwoFactorLoginChallenge,
   setAuthCookie,
 } from "@/lib/api/auth";
-import { isProfileComplete } from "@/lib/api/users";
+import { navigateAfterAuth } from "@/lib/auth/postLoginNavigation";
 import { isBackendConfigured } from "@/lib/backendConfig";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { CreditCard, X } from "lucide-react";
@@ -291,23 +291,8 @@ function SignupPageContent() {
     handleOAuthRedirect()
       .then(async (result) => {
         if (result) {
-          const profileComplete = await isProfileComplete(result.user.uid);
-          if (!profileComplete) {
-            router.push("/initial-profile-steps");
-            return;
-          }
-          const userData = await getUserData(result.user.uid);
-          const role = userData?.role || "";
-          const currentRole = userData?.currentRole || "";
-          if (!role || !currentRole) {
-            router.push("/initial-profile-steps");
-            return;
-          }
-          if (role === "client" && currentRole === "client") {
-            router.push("/client-home");
-          } else {
-            router.push("/dashboard");
-          }
+          setAuthCookie(result.user);
+          await navigateAfterAuth(router, result.user);
         }
       })
       .catch((err) => {
@@ -355,24 +340,7 @@ function SignupPageContent() {
         return;
       }
       setAuthCookie(userCredential.user);
-
-      // Check if profile is complete
-      const profileComplete = await isProfileComplete(userCredential.user.uid);
-      if (!profileComplete) {
-        router.push("/initial-profile-steps");
-      } else {
-        // Get user data to determine role
-        const userData = await getUserData(userCredential.user.uid);
-        const currentRole = userData?.currentRole || userData?.role || "provider";
-        const role = userData?.role || "client";
-
-        // Redirect clients to client-home, providers to dashboard
-        if (role === "client" && currentRole === "client") {
-          router.push("/client-home");
-        } else {
-          router.push("/dashboard");
-        }
-      }
+      await navigateAfterAuth(router, userCredential.user);
     } catch (err) {
       if (err instanceof AuthError && err.code === OAUTH_REDIRECT_PENDING_CODE) {
         return;
@@ -400,24 +368,7 @@ function SignupPageContent() {
         return;
       }
       setAuthCookie(userCredential.user);
-
-      // Check if profile is complete
-      const profileComplete = await isProfileComplete(userCredential.user.uid);
-      if (!profileComplete) {
-        router.push("/initial-profile-steps");
-      } else {
-        // Get user data to determine role
-        const userData = await getUserData(userCredential.user.uid);
-        const currentRole = userData?.currentRole || userData?.role || "provider";
-        const role = userData?.role || "client";
-
-        // Redirect clients to client-home, providers to dashboard
-        if (role === "client" && currentRole === "client") {
-          router.push("/client-home");
-        } else {
-          router.push("/dashboard");
-        }
-      }
+      await navigateAfterAuth(router, userCredential.user);
     } catch (err) {
       if (err instanceof AuthError && err.code === OAUTH_REDIRECT_PENDING_CODE) {
         return;

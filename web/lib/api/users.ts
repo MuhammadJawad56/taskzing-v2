@@ -4,6 +4,7 @@ import {
   type UserData,
 } from "./auth";
 import type { User } from "@/lib/types/user";
+import { resolveUserIsVerified } from "@/lib/profile/profileHelpers";
 import {
   PROFILE_SAVED_EVENT,
   PROFILE_SAVED_UNDONE_EVENT,
@@ -97,7 +98,7 @@ function toUser(userData: Partial<UserData> & { id: string; email: string }): Us
     location: userData.location,
     description: userData.bio || userData.about,
     photos: photosList.length > 0 ? photosList : primaryPhoto ? [primaryPhoto] : [],
-    isVerified: userData.isVerified ?? false,
+    isVerified: resolveUserIsVerified(userData),
     totalRating: userData.totalRating ?? 0,
     totalReviews: userData.totalReviews ?? 0,
     skills: userData.skills || [],

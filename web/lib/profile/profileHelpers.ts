@@ -14,7 +14,23 @@ export function isClientRole(role?: string | null): boolean {
 
 export function isProviderRole(role?: string | null): boolean {
   const r = normalizeRole(role);
-  return r === "provider" || r === "both";
+  return r === "provider" || r === "both" || r === "client+provider";
+}
+
+/** Flutter `BackendUserDto` / `BackendUser`: verified flag or email verified timestamp. */
+export function resolveUserIsVerified(
+  raw: {
+    isVerified?: boolean;
+    verified?: boolean;
+    emailVerifiedAt?: string | null;
+    email_verified_at?: string | null;
+  } | null
+  | undefined,
+): boolean {
+  if (!raw) return false;
+  if (raw.isVerified === true || raw.verified === true) return true;
+  const at = raw.emailVerifiedAt ?? raw.email_verified_at;
+  return typeof at === "string" && at.trim().length > 0;
 }
 
 export function getViewedProfileRole(user: User | null): string {

@@ -342,7 +342,15 @@ export function apiRecordToUserData(raw: unknown, uid: string): UserData {
         r.photoUrl ||
         r.profile_picture ||
         r.photo_url) as string | undefined,
-    isVerified: r.isVerified as boolean | undefined,
+    isVerified: (() => {
+      const emailVerifiedAt =
+        coerceDate(r.emailVerifiedAt) || coerceDate(r.email_verified_at);
+      const explicit =
+        r.isVerified === true ||
+        r.verified === true ||
+        r.emailVerified === true;
+      return explicit || emailVerifiedAt != null;
+    })(),
     totpEnabled:
       r.totpEnabled === true ||
       r.totp_enabled === true ||

@@ -10,7 +10,6 @@ import {
   QrCode,
   X,
   MessageSquare,
-  CheckCircle2,
   Bookmark,
   Heart,
 } from "lucide-react";
@@ -19,6 +18,7 @@ import { ProfileJobsFilterBar } from "@/components/profile/ProfileJobsFilterBar"
 import { ProfilePhotoLightbox } from "@/components/profile/ProfilePhotoLightbox";
 import { ProfileFollowButton } from "@/components/profile/ProfileFollowButton";
 import { ProfileQrCodeButton } from "@/components/profile/ProfileQrCodeButton";
+import { ProfileVerifiedBadge } from "@/components/profile/ProfileVerifiedBadge";
 import {
   ProfileFollowStatsRow,
   type FollowStatTab,
@@ -383,6 +383,7 @@ export default function ProfilePage() {
 
   const avatarShapeClass = getAvatarShapeClass(viewedRole);
   const showProviderBadge = isProviderRole(viewedRole);
+  const showAccountVerified = profileUser?.isVerified === true;
   const showHandleChip =
     Boolean(profileUser?.username?.trim()) && Boolean(profileUser?.fullName?.trim());
 
@@ -584,12 +585,11 @@ export default function ProfilePage() {
                       <h1 className="min-w-0 max-w-full break-words text-lg font-bold leading-tight text-gray-900 dark:text-white">
                         {profileDisplayName}
                       </h1>
-                      {profileUser?.isVerified === true ? (
-                        <CheckCircle2
-                          className="h-4 w-4 shrink-0 text-[#249689]"
-                          aria-label="Verified"
-                          fill="currentColor"
-                        />
+                      {showProviderBadge ? (
+                        <ProfileVerifiedBadge variant="provider" size="mobile" />
+                      ) : null}
+                      {showAccountVerified ? (
+                        <ProfileVerifiedBadge variant="account" size="mobile" />
                       ) : null}
                       <ProfileQrCodeButton compact onClick={() => setShowQRModal(true)} />
                       <Link href={`/edit-profile?returnTo=/profile/${userId}`} className="inline-flex shrink-0">
@@ -604,12 +604,11 @@ export default function ProfilePage() {
                         <h1 className="min-w-0 max-w-full break-words text-lg font-bold leading-tight text-gray-900 dark:text-white">
                           {profileDisplayName}
                         </h1>
-                        {profileUser?.isVerified === true ? (
-                          <CheckCircle2
-                            className="h-4 w-4 shrink-0 text-[#249689]"
-                            aria-label="Verified"
-                            fill="currentColor"
-                          />
+                        {showProviderBadge ? (
+                          <ProfileVerifiedBadge variant="provider" size="mobile" />
+                        ) : null}
+                        {showAccountVerified ? (
+                          <ProfileVerifiedBadge variant="account" size="mobile" />
                         ) : null}
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -723,8 +722,11 @@ export default function ProfilePage() {
                       <h1 className="text-3xl font-bold text-theme-primaryText dark:text-white">
                         {profileDisplayName}
                       </h1>
-                      {profileUser?.isVerified === true ? (
-                        <CheckCircle2 className="h-6 w-6 shrink-0 text-[#249689]" fill="currentColor" aria-hidden />
+                      {showProviderBadge ? (
+                        <ProfileVerifiedBadge variant="provider" size="desktop" />
+                      ) : null}
+                      {showAccountVerified ? (
+                        <ProfileVerifiedBadge variant="account" size="desktop" />
                       ) : null}
                       <ProfileQrCodeButton onClick={() => setShowQRModal(true)} />
                       <Link href={`/edit-profile?returnTo=/profile/${userId}`} className="-ml-1">
@@ -739,8 +741,11 @@ export default function ProfilePage() {
                         <h1 className="min-w-0 max-w-full break-words text-3xl font-bold text-theme-primaryText dark:text-white">
                           {profileDisplayName}
                         </h1>
-                        {profileUser?.isVerified === true ? (
-                          <CheckCircle2 className="h-6 w-6 shrink-0 text-[#249689]" fill="currentColor" aria-hidden />
+                        {showProviderBadge ? (
+                          <ProfileVerifiedBadge variant="provider" size="desktop" />
+                        ) : null}
+                        {showAccountVerified ? (
+                          <ProfileVerifiedBadge variant="account" size="desktop" />
                         ) : null}
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">

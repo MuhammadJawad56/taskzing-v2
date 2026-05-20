@@ -5,12 +5,12 @@ import { APPLE_SERVICES_ID_FALLBACK } from "@/lib/auth/socialAuthConfig";
 export type AppleWebCredentials = {
   identityToken: string;
   authorizationCode: string;
-  /** Raw nonce sent to backend (Flutter `toAppleLoginJson`); hashed form goes to Apple JS. */
   rawNonce: string;
   user?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
+  isPrivateEmail?: boolean;
 };
 
 const APPLE_SCRIPT_SRC =
@@ -50,13 +50,13 @@ function loadAppleScript(): Promise<void> {
   return appleScriptPromise;
 }
 
-async function sha256Base64Url(input: string): Promise<string> {
+/** Flutter `SocialAuthProviderDataSource._sha256` — hex digest for Apple `nonce`. */
+async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
   const hash = await crypto.subtle.digest("SHA-256", data);
-  const bytes = new Uint8Array(hash);
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function flattenRecord(raw: unknown): Record<string, unknown> {
@@ -159,7 +159,7 @@ export async function requestAppleWebCredentials(): Promise<AppleWebCredentials>
   await loadAppleScript();
   const { clientId, redirectUri } = await fetchAppleWebConfig();
   const rawNonce = crypto.randomUUID();
-  const hashedNonce = await sha256Base64Url(rawNonce);
+  const hashedNonce = await sha256Hex(rawNonce);
 
   if (!window.AppleID?.auth) {
     throw new SocialAuthError("Apple Sign In is unavailable.", "auth/configuration-error");
@@ -180,12 +180,16 @@ export async function requestAppleWebCredentials(): Promise<AppleWebCredentials>
     const identityToken = String(auth?.id_token ?? "").trim();
     const authorizationCode = String(auth?.code ?? "").trim();
 
-    if (!identityToken || !authorizationCode) {
+    if (!identityToken) {
       throw new SocialAuthError(
-        "Apple did not return identity token or authorization code.",
+        "Apple sign-in did not return an identity token.",
         "auth/configuration-error"
       );
     }
+
+    // Flutter: authorizationCode may be empty; backend still accepts identity token.
+    const effectiveAuthCode =
+      authorizationCode.length > 0 ? authorizationCode : identityToken;
 
     const userBlock = response?.user;
     const name = userBlock?.name;
@@ -193,21 +197,25 @@ export async function requestAppleWebCredentials(): Promise<AppleWebCredentials>
       typeof userBlock?.email === "string" && userBlock.email.trim()
         ? userBlock.email.trim()
         : undefined;
+    const isPrivateRelay =
+      !!email && email.toLowerCase().includes("privaterelay.appleid.com");
 
     return {
       identityToken,
-      authorizationCode,
+      authorizationCode: effectiveAuthCode,
       rawNonce,
       user: appleIdTokenSub(identityToken),
       email,
       firstName: name?.firstName?.trim() || undefined,
       lastName: name?.lastName?.trim() || undefined,
+      isPrivateEmail: isPrivateRelay ? true : undefined,
     };
   } catch (err) {
     throw mapAppleError(err);
   }
 }
 
+/** Flutter `SocialLoginRequestDto.toAppleLoginJson()` — whitelisted Nest DTO keys only. */
 export function toAppleLoginJson(creds: AppleWebCredentials): Record<string, unknown> {
   const body: Record<string, unknown> = {
     identityToken: creds.identityToken,
@@ -215,20 +223,26 @@ export function toAppleLoginJson(creds: AppleWebCredentials): Record<string, unk
     identity_token: creds.identityToken,
     authorization_code: creds.authorizationCode,
   };
-  if (creds.user) body.user = creds.user;
-  if (creds.email) body.email = creds.email;
-  if (creds.firstName) {
-    body.firstName = creds.firstName;
-    body.first_name = creds.firstName;
+  const uid = creds.user?.trim();
+  if (uid) {
+    body.user = uid;
+    body.user_id = uid;
   }
-  if (creds.lastName) {
-    body.lastName = creds.lastName;
-    body.last_name = creds.lastName;
+  const em = creds.email?.trim();
+  if (em) body.email = em;
+  const gn = creds.firstName?.trim();
+  if (gn) {
+    body.firstName = gn;
+    body.first_name = gn;
   }
-  if (creds.rawNonce) {
-    body.nonce = creds.rawNonce;
-    body.rawNonce = creds.rawNonce;
-    body.raw_nonce = creds.rawNonce;
+  const fn = creds.lastName?.trim();
+  if (fn) {
+    body.lastName = fn;
+    body.last_name = fn;
+  }
+  if (creds.isPrivateEmail === true) {
+    body.is_private_email = true;
+    body.isPrivateEmail = true;
   }
   return body;
 }

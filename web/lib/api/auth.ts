@@ -9,7 +9,6 @@ import {
 } from "@/lib/auth/appleSignInWeb";
 import { requestGoogleWebTokens, type GoogleWebTokens } from "@/lib/auth/googleSignInWeb";
 import { isLikelyGoogleOriginMismatch } from "@/lib/auth/socialAuthConfig";
-import { isFirebaseAuthConfigured } from "@/lib/firebase/client";
 import { SocialAuthError } from "@/lib/auth/socialAuthError";
 import {
   apiFetchJson,
@@ -847,12 +846,6 @@ export async function signInWithGoogle(
 ): Promise<{ user: AuthUser; userData: UserData } | TwoFactorLoginChallenge> {
   if (!isBackendConfigured()) {
     throw new AuthError("API is not configured.", "auth/configuration-error");
-  }
-  if (!isFirebaseAuthConfigured()) {
-    throw new AuthError(
-      "Firebase is not configured for Google sign-in.",
-      "auth/configuration-error"
-    );
   }
   if (options?.pendingSignupRole) {
     storePendingSignupRole(options.pendingSignupRole);

@@ -1,4 +1,4 @@
-import { requestGoogleTokensViaFirebase } from "@/lib/auth/googleSignInFirebase";
+import { requestGoogleTokensViaGis } from "@/lib/auth/googleSignInGis";
 import { SocialAuthError } from "@/lib/auth/socialAuthError";
 
 export type GoogleWebTokens = {
@@ -6,7 +6,7 @@ export type GoogleWebTokens = {
   accessToken: string;
 };
 
-/** Google tokens for `POST /auth/google` (Flutter `toGoogleLoginJson` parity). */
+/** Google tokens for `POST /auth/google` (Flutter `SocialLoginRequestDto.toGoogleLoginJson`). */
 export function requestGoogleWebTokens(): Promise<GoogleWebTokens> {
   if (typeof window === "undefined") {
     return Promise.reject(
@@ -16,5 +16,5 @@ export function requestGoogleWebTokens(): Promise<GoogleWebTokens> {
       )
     );
   }
-  return requestGoogleTokensViaFirebase();
+  return requestGoogleTokensViaGis();
 }

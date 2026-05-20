@@ -1,6 +1,6 @@
 /**
  * Web OAuth client (google-services `client_type: 3`).
- * Same as Flutter `google_auth.dart` → `_kGoogleServerClientId`.
+ * Same as Flutter `SocialAuthConfig.googleClientId` / backend `GOOGLE_CLIENT_ID`.
  */
 export const FIREBASE_GOOGLE_WEB_CLIENT_ID =
   "211438342424-2q040ab0aqf3ionmc9f8h9n4sjue9ron.apps.googleusercontent.com";
@@ -14,7 +14,7 @@ export const APPLE_SERVICES_ID_FALLBACK = "com.taskzing.zingte.webauth";
 
 /**
  * Add each origin under Google Cloud Console → APIs & Services → Credentials →
- * Web OAuth client (GIS legacy); web app uses Firebase Auth popup instead.
+ * Web OAuth client → Authorized JavaScript origins (required for GIS / Flutter web).
  */
 export const GOOGLE_WEB_AUTHORIZED_ORIGINS = [
   "http://localhost:3000",

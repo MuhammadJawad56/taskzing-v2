@@ -34,8 +34,8 @@ function mapFirebaseAuthError(err: AuthError): SocialAuthError {
 }
 
 /**
- * Same approach as Flutter web `google_auth.dart` (`signInWithPopup`).
- * Firebase manages OAuth redirect URIs per authorized domain — avoids GIS origin_mismatch.
+ * Legacy Firebase Auth popup flow (superseded by `googleSignInGis.ts`).
+ * Flutter 2 uses `google_sign_in` + Web OAuth client, not Firebase Auth, for social login.
  */
 export async function requestGoogleTokensViaFirebase(): Promise<GoogleWebTokens> {
   if (!isFirebaseAuthConfigured()) {

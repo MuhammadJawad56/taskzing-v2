@@ -8,10 +8,8 @@ import {
   toAppleLoginJson,
 } from "@/lib/auth/appleSignInWeb";
 import { requestGoogleWebTokens, type GoogleWebTokens } from "@/lib/auth/googleSignInWeb";
-import {
-  getGoogleWebClientId,
-  isLikelyGoogleOriginMismatch,
-} from "@/lib/auth/socialAuthConfig";
+import { isLikelyGoogleOriginMismatch } from "@/lib/auth/socialAuthConfig";
+import { isFirebaseAuthConfigured } from "@/lib/firebase/client";
 import { SocialAuthError } from "@/lib/auth/socialAuthError";
 import {
   apiFetchJson,
@@ -830,16 +828,16 @@ async function completeAuthFromSocialResponse(
   return { user: authUser, userData };
 }
 
-/** Google sign-in — Flutter `POST /auth/google` with GIS id + access tokens. */
+/** Google sign-in — Flutter `POST /auth/google` with Google id + access tokens. */
 export async function signInWithGoogle(
   options?: SocialAuthOptions
 ): Promise<{ user: AuthUser; userData: UserData } | TwoFactorLoginChallenge> {
   if (!isBackendConfigured()) {
     throw new AuthError("API is not configured.", "auth/configuration-error");
   }
-  if (!getGoogleWebClientId()) {
+  if (!isFirebaseAuthConfigured()) {
     throw new AuthError(
-      "Google client ID is not configured.",
+      "Firebase is not configured for Google sign-in.",
       "auth/configuration-error"
     );
   }

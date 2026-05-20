@@ -166,10 +166,8 @@ export default function ProviderDashboardPage() {
       return;
     }
     
-    // If no user, stop loading
     if (!user) {
-      console.log("[Dashboard] No user, setting loading to false");
-      setIsLoading(false);
+      console.log("[Dashboard] No user, skipping load");
       return;
     }
     

@@ -195,16 +195,7 @@ export default function ChatZingPage() {
 
   const handleQuickAction = useCallback(
     (id: ChatzingQuickActionId) => {
-      if (id === "image") {
-        fileInputRef.current?.click();
-        return;
-      }
-      if (id === "voice") {
-        void handleVoiceClick();
-        return;
-      }
       const prompt = getQuickActionPrompt(id, locale);
-      if (!prompt) return;
       if (
         (id === "nearby_jobs" || id === "nearby_showcases" || id === "local_demand") &&
         pendingLocation &&
@@ -1030,7 +1021,6 @@ export default function ChatZingPage() {
           <ChatzingActionBar
             locale={locale}
             disabled={isTyping || !user}
-            isRecording={isRecording}
             onAction={handleQuickAction}
           />
           <ChatzingComposer

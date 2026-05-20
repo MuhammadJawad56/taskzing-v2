@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Share2, MessageCircle, MapPin, Calendar, Briefcase, ChevronLeft, ChevronRight, X, ThumbsUp } from "lucide-react";
+import { ArrowLeft, Share2, MessageCircle, MapPin, Calendar, Briefcase, ChevronLeft, ChevronRight, X, Heart } from "lucide-react";
 import { getShowcaseItem } from "@/lib/api/showcase";
 import { getUserById } from "@/lib/api/users";
 import { getJobsByClientId } from "@/lib/api/jobs";
@@ -353,7 +353,7 @@ export default function WorkDetailsPage() {
                 className="inline-flex items-center gap-1 rounded-full px-2 py-2 hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-70"
                 aria-label={isLiked ? "Unlike work" : "Like work"}
               >
-                <ThumbsUp className={`h-5 w-5 ${isLiked ? "text-[#FF2D2D]" : "text-gray-900 dark:text-white"}`} />
+                <Heart className={`h-5 w-5 ${isLiked ? "fill-[#FF2D2D] text-[#FF2D2D]" : "text-gray-900 dark:text-white"}`} />
                 <span className="text-xs font-semibold text-gray-700 dark:text-white/90 min-w-[1ch]">{likesCount}</span>
               </button>
               <button

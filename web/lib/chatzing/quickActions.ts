@@ -1,23 +1,17 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  ImagePlus,
-  Mic,
   Briefcase,
   Grid3X3,
   TrendingUp,
   PlusCircle,
-  HelpCircle,
 } from "lucide-react";
 
 export type ChatzingQuickActionId =
-  | "image"
-  | "voice"
   | "nearby_jobs"
   | "nearby_showcases"
   | "local_demand"
   | "post_job"
-  | "post_showcase"
-  | "help";
+  | "post_showcase";
 
 export type ChatzingQuickAction = {
   id: ChatzingQuickActionId;
@@ -27,14 +21,11 @@ export type ChatzingQuickAction = {
 };
 
 export const CHATZING_QUICK_ACTIONS: ChatzingQuickAction[] = [
-  { id: "image", icon: ImagePlus, usesChat: false },
-  { id: "voice", icon: Mic, usesChat: false },
   { id: "nearby_jobs", icon: Briefcase, usesChat: true },
   { id: "nearby_showcases", icon: Grid3X3, usesChat: true },
   { id: "local_demand", icon: TrendingUp, usesChat: true },
   { id: "post_job", icon: PlusCircle, usesChat: true },
   { id: "post_showcase", icon: PlusCircle, usesChat: true },
-  { id: "help", icon: HelpCircle, usesChat: true },
 ];
 
 /** Natural-language prompts sent to the API (no internal tool names). */
@@ -50,8 +41,6 @@ const PROMPTS = {
       "Help me post a new job on TaskZing. If I only give a title or short phrase, draft a full professional description for me to review, then help with budget, address, date, and skills before posting.",
     post_showcase:
       "Help me create a TaskZing showcase. If I only give a title or short phrase, draft a full professional description (at least 50 characters), category, and skills. I can attach photos in chat for you to use when I publish.",
-    help:
-      "Summarize what ChatZing can do on TaskZing: help, jobs, showcases, voice, photo analysis, and local insights.",
   },
   fr: {
     nearby_jobs:
@@ -64,31 +53,23 @@ const PROMPTS = {
       "Aidez-moi à publier un emploi sur TaskZing. Si je ne donne qu'un titre ou une phrase courte, rédigez une description complète pour validation, puis budget, adresse, date et compétences avant publication.",
     post_showcase:
       "Aidez-moi à créer une vitrine TaskZing. Si je ne donne qu'un titre ou une phrase courte, rédigez une description complète (au moins 50 caractères), catégorie et compétences. Je peux joindre des photos ici pour la publication.",
-    help:
-      "Résumez ce que ChatZing peut faire sur TaskZing : aide, emplois, vitrines, voix, analyse de photos et insights locaux.",
   },
 } as const;
 
 const LABELS = {
   en: {
-    image: "Photo",
-    voice: "Voice",
     nearby_jobs: "Jobs nearby",
     nearby_showcases: "Showcases",
     local_demand: "Local demand",
     post_job: "Post job",
     post_showcase: "Showcase",
-    help: "Help",
   },
   fr: {
-    image: "Photo",
-    voice: "Voix",
     nearby_jobs: "Emplois",
     nearby_showcases: "Vitrines",
     local_demand: "Demande locale",
     post_job: "Publier",
     post_showcase: "Vitrine",
-    help: "Aide",
   },
 } as const;
 
@@ -102,7 +83,6 @@ export function getQuickActionLabel(
 export function getQuickActionPrompt(
   id: ChatzingQuickActionId,
   locale: "en" | "fr"
-): string | null {
-  if (id === "image" || id === "voice") return null;
+): string {
   return PROMPTS[locale][id];
 }

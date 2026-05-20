@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Map, Bookmark, SlidersHorizontal, ChevronDown, MapPin, MessageSquare, ThumbsUp } from "lucide-react";
+import { Map, Bookmark, SlidersHorizontal, ChevronDown, MapPin, MessageSquare, Heart } from "lucide-react";
 import {
   getAllShowcases,
   formatShowcaseLoadError,
@@ -207,7 +207,7 @@ function ShowcaseTile({ item, meta, skills, onSaveToggle, onLikeToggle, likedSho
             disabled={likingShowcaseId === item.id}
             className="absolute right-2 top-2 z-10 inline-flex h-8 min-w-[2.4rem] items-center justify-center gap-1 rounded-full bg-black/35 px-2 text-white backdrop-blur-sm transition hover:bg-black/50 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <ThumbsUp className={`h-4 w-4 ${isLiked ? "text-[#FF2D2D]" : "text-white"}`} />
+            <Heart className={`h-4 w-4 ${isLiked ? "fill-[#FF2D2D] text-[#FF2D2D]" : "text-white"}`} />
             <span className="text-[10px] font-semibold leading-none text-white">{likesCount}</span>
           </button>
           {images.length > 1 && (

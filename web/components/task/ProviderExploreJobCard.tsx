@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Bookmark, ThumbsUp, Loader2, MapPin } from "lucide-react";
+import { Bookmark, Heart, Loader2, MapPin } from "lucide-react";
 import { Task } from "@/lib/types/task";
 import { cn } from "@/lib/utils/cn";
 
@@ -59,7 +59,7 @@ export function ProviderExploreJobCard({
             aria-label={liked ? "Unlike job" : "Like job"}
             className="absolute right-2 top-2 z-10 inline-flex h-8 min-w-[2.4rem] items-center justify-center gap-1 rounded-full bg-black/35 px-2 text-white backdrop-blur-sm transition hover:bg-black/50 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <ThumbsUp className={cn("h-4 w-4", liked ? "text-[#FF2D2D]" : "text-white")} />
+            <Heart className={cn("h-4 w-4", liked ? "fill-[#FF2D2D] text-[#FF2D2D]" : "text-white")} />
             <span className="text-[10px] font-semibold leading-none text-white">{Math.max(0, likesCount)}</span>
           </button>
           {imgLoading ? (
